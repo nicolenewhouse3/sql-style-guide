@@ -11,8 +11,8 @@ This SQL Style Guide provides coding standards and best practices to ensure cons
 - Make onboarding for new team members easier.
 
 ### Contents
-- [General Formatting](#general-formatting)
-- [Joins](#joins)
+- [General Formatting]([#general-formatting](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#general-formatting))
+- [Joins]([#general-formatting](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#joins))
 - [Naming Conventions](#naming-conventions)
 - [Query Structure](#query-structure)
 - [Commenting](#commenting)
