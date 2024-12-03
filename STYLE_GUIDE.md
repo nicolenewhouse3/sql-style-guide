@@ -366,7 +366,38 @@ on
     c.CUSTOMER_ID = o.CUSTOMER_ID;
 ```
 
+## Advanced Query Techniques
+### 1. Ranking with `RANK()` and `PARTITION BY`
+#### Use Case:
+- When you need to rank rows within groups (e.g., finding the top orders by customer).
+#### Syntax
+```sql
+select
+    column1,
+    column2,
+    rank() over (partition by column_to_partition order by column_to_rank desc) as rank_column
+from
+    table_name;
+```
+#### Example
+- Find the top-ranked orders for each customer based on ORDER_TOTAL.
+```sql
+select
+    CUSTOMER_ID,
+    ORDER_ID,
+    ORDER_TOTAL,
+    rank() over (
+        partition by CUSTOMER_ID
+        order by ORDER_TOTAL desc
+    ) as ORDER_RANK
+from
+    ORDERS;
+```
+- The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
+- The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
 
+  
+  
 ## Performance Best Practices
 ### 1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
