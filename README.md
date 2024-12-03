@@ -13,7 +13,7 @@ This SQL Style Guide provides coding standards and best practices to ensure cons
 ### Contents
 - [General Formatting](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#general-formatting)
 - [Joins](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#joins)
-- [Naming Conventions](#naming-conventions)
+- [Common Table Expressions (CTEs)](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#common-table-expressions-ctes)
 - [Query Structure](#query-structure)
 - [Commenting](#commenting)
 - [Performance Best Practices](#performance-best-practices)
