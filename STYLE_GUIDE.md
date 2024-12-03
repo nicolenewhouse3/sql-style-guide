@@ -246,6 +246,56 @@ where
     STATUS = 'Completed';
 ```
 
+## Handling NULL Values
+- Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
+  
+```sql
+-- Good
+with customer_orders as (
+    select
+        CUSTOMER_ID,
+        count(*) as TOTAL_ORDERS
+    from
+        ORDERS
+    group by
+        CUSTOMER_ID
+)
+select
+    c.CUSTOMER_ID,
+    c.CUSTOMER_NAME,
+    coalesce(o.TOTAL_ORDERS, 0) as TOTAL_ORDERS
+from
+    CUSTOMERS as c
+left join
+    customer_orders as o
+on
+    c.CUSTOMER_ID = o.CUSTOMER_ID;
+
+-- Bad
+with customer_orders as (
+    select
+        CUSTOMER_ID,
+        count(*) as TOTAL_ORDERS
+    from
+        ORDERS
+    group by
+        CUSTOMER_ID
+)
+select
+    c.CUSTOMER_ID,
+    c.CUSTOMER_NAME,
+    case
+        when o.TOTAL_ORDERS is null then 0
+        else o.TOTAL_ORDERS
+    end as TOTAL_ORDERS
+from
+    CUSTOMERS as c
+left join
+    customer_orders as o
+on
+    c.CUSTOMER_ID = o.CUSTOMER_ID;
+```
+
 ## Comments 
 - Use -- for inline comments and place them on their own line.
 - Comments should be used **minimally**, aligning with best coding practices. 
@@ -277,6 +327,8 @@ where
 group by
     CUSTOMER_ID;
 ```
+
+
 
 ### Guidelines for Effective Comments:
 #### 1. Explain Methodology:
