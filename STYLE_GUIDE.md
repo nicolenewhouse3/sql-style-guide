@@ -172,7 +172,7 @@ on
 where
     o.ORDER_DATE >= '2024-01-01';
 ```
-- Includes all customers, even if they have no orders.
+  - Includes all customers, even if they have no orders.
 
 #### Left Join (To Include Non-Matching Rows)
 
@@ -189,7 +189,7 @@ on
 where
     c.REGION = 'Northwest';
 ```
-- Includes all customers, even if they have no orders.
+  - Includes all customers, even if they have no orders.
 
 #### Full Outer Join (Rarely Used)
 
@@ -205,7 +205,7 @@ full outer join
 on
     t1.ID = t2.ID;
 ```
-- Includes rows that match in either table, with `NULL` values for missing data.
+  - Includes rows that match in either table, with `NULL` values for missing data.
 
 ### Best Practices for Multi-Table Joins
 #### 1. Use Aliases Consistently:
@@ -393,8 +393,8 @@ select
 from
     ORDERS;
 ```
-- The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
-- The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
+  - The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
+  - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
 
   
   
