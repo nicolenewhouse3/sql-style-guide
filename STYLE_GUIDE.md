@@ -478,7 +478,7 @@ having
     STATUS = 'Shipped';         -- Late filtering
 ```
 
-### 5.
+### 5. Modular Query Design
 - Avoid overly complex queries; break complex queries into smaller, modular parts using Common Table Expressions (CTEs) or temporary tables.
 
 ```sql
@@ -554,3 +554,9 @@ having
 - Name primary keys as `id` or `TABLE_NAME_ID`.
 ### 3. Foreign Keys:
 - Use `REFERENCED_TABLE_NAME_ID` for foreign keys.
+
+## Error Handling
+Debugging and Error Handling
+Test queries incrementally; build them step by step.
+Use EXPLAIN or EXPLAIN ANALYZE to analyze query performance.
+Simplify complex queries using CTEs or temporary tables.
