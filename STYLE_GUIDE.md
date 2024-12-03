@@ -54,6 +54,76 @@ where
     and DISCOUNT=0;
 ```
 
+## Comments 
+- Use -- for inline comments and place them on their own line.
+- Comments should be used **minimally**, aligning with best coding practices. 
+  - If the code is clear, concise, and explains the logic straightforwardly, additional comments are unnecessary.
+- Use comments to explain **methodology** or **major process steps**, not to restate what the code is doing.
+
+```sql
+-- Good
+-- Calculate total sales for each customer in 2024
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_SALES
+from
+    ORDERS
+where
+    ORDER_DATE >= '2024-01-01'
+group by
+    CUSTOMER_ID;
+
+-- Bad
+-- Selecting customer ID and calculating the sum of order totals
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_SALES
+from
+    ORDERS
+where
+    ORDER_DATE >= '2024-01-01'
+group by
+    CUSTOMER_ID;
+```
+
+### Guidelines for Effective Comments:
+#### 1. Explain Methodology:
+- Describe the reasoning behind complex calculations, transformations, or processes.
+  
+```sql
+-- Allocating sales to regions based on customer ZIP code
+select
+    REGION,
+    sum(SALES) as TOTAL_SALES
+from
+    SALES_DATA
+group by
+    REGION;
+```
+#### 2. Document Major Steps:
+- Use comments to outline key steps in a multi-step process.
+  
+```sql
+-- Step 1: Retrieve orders placed in 2024
+with recent_orders as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID
+    from
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
+)
+-- Step 2: Calculate total sales by customer
+select
+    CUSTOMER_ID,
+    count(ORDER_ID) as TOTAL_ORDERS
+from
+    recent_orders
+group by
+    CUSTOMER_ID;
+```
+
 ## Joins
 - Use explicit join syntax (join + on) for clarity and to avoid Cartesian joins.
 - Always use aliases to make your queries easier to read.
@@ -250,7 +320,7 @@ where
 - Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
   
 ```sql
--- Good
+-- Good: Using COALESCE
 with customer_orders as (
     select
         CUSTOMER_ID,
@@ -271,7 +341,7 @@ left join
 on
     c.CUSTOMER_ID = o.CUSTOMER_ID;
 
--- Bad
+-- Bad: Using a CASE Statement
 with customer_orders as (
     select
         CUSTOMER_ID,
@@ -296,77 +366,6 @@ on
     c.CUSTOMER_ID = o.CUSTOMER_ID;
 ```
 
-## Comments 
-- Use -- for inline comments and place them on their own line.
-- Comments should be used **minimally**, aligning with best coding practices. 
-  - If the code is clear, concise, and explains the logic straightforwardly, additional comments are unnecessary.
-- Use comments to explain **methodology** or **major process steps**, not to restate what the code is doing.
-
-```sql
--- Good
--- Calculate total sales for each customer in 2024
-select
-    CUSTOMER_ID,
-    sum(ORDER_TOTAL) as TOTAL_SALES
-from
-    ORDERS
-where
-    ORDER_DATE >= '2024-01-01'
-group by
-    CUSTOMER_ID;
-
--- Bad
--- Selecting customer ID and calculating the sum of order totals
-select
-    CUSTOMER_ID,
-    sum(ORDER_TOTAL) as TOTAL_SALES
-from
-    ORDERS
-where
-    ORDER_DATE >= '2024-01-01'
-group by
-    CUSTOMER_ID;
-```
-
-
-
-### Guidelines for Effective Comments:
-#### 1. Explain Methodology:
-- Describe the reasoning behind complex calculations, transformations, or processes.
-  
-```sql
--- Allocating sales to regions based on customer ZIP code
-select
-    REGION,
-    sum(SALES) as TOTAL_SALES
-from
-    SALES_DATA
-group by
-    REGION;
-```
-#### 2. Document Major Steps:
-- Use comments to outline key steps in a multi-step process.
-  
-```sql
--- Step 1: Retrieve orders placed in 2024
-with recent_orders as (
-    select
-        ORDER_ID,
-        CUSTOMER_ID
-    from
-        ORDERS
-    where
-        ORDER_DATE >= '2024-01-01'
-)
--- Step 2: Calculate total sales by customer
-select
-    CUSTOMER_ID,
-    count(ORDER_ID) as TOTAL_ORDERS
-from
-    recent_orders
-group by
-    CUSTOMER_ID;
-```
 
 ## Performance Best Practices
 ### 1. Avoid `select *`
