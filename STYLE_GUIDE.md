@@ -86,7 +86,7 @@ where
     and STOCK_LEVEL < 10;
 ```
 
-## Use CTEs for Clarity:  
+## Common Table Expressions (CTEs):  
 - Use with Common Table Expressions (CTEs) for reusable logic and improved readability.
 - Avoid overusing nested subqueries, as they can make the code harder to understand and maintain.
   
