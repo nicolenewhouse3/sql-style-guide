@@ -2,7 +2,6 @@
 This guide outlines best practices and conventions for writing clean, maintainable, and efficient SQL code. By adhering to these guidelines, teams can improve code readability, simplify collaboration, and ensure consistency across projects.
 
 ## General Formatting
-
 ### Capitalization
 - Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
 - Use **UPPERCASE** for table and column names to make them stand out.
@@ -11,9 +10,7 @@ This guide outlines best practices and conventions for writing clean, maintainab
 - Keep SQL keywords (`select`, `from`, `where`) aligned to the left.
 ### Line Breaks
 - Place each clause (`select`, `from`, `where`, etc.) on a new line.
-- Align and/or in conditions under the where clause.
-### White Space Around Symbols
-- Always include white space around operators like =, *, -, and + to improve readability.
+- Align `and/or` in conditions under the where clause.
   
 ```sql
 -- Good
@@ -31,11 +28,37 @@ where
 SELECT CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_EMAIL FROM CUSTOMERS WHERE CITY='Chicago' AND STATE='IL';
 ```
 
+### White Space Around Symbols
+- Always include white space around operators like `=`, `*`, `-`, and `+` to improve readability.
+```sql
+-- Good
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME,
+    ORDER_TOTAL * 1.05 as TOTAL_WITH_TAX
+from
+    ORDERS
+where
+    ORDER_TOTAL > 100
+    and DISCOUNT = 0;
+
+-- Bad
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME,
+    ORDER_TOTAL*1.05 as TOTAL_WITH_TAX
+from
+    ORDERS
+where
+    ORDER_TOTAL>100
+    and DISCOUNT=0;
+```
+
 ## Joins
 - Use explicit join syntax (join + on) for clarity.
 - Always use aliases to make your queries easier to read.
 - Use the `as` keyword for explicit aliasing.
-
+  
 ```sql
 -- Good
 select
@@ -66,6 +89,7 @@ where
 ## Use CTEs for Clarity:  
 - Use with Common Table Expressions (CTEs) for reusable logic and improved readability.
 - Avoid overusing nested subqueries, as they can make the code harder to understand and maintain.
+  
 ```sql
 -- Good
 with recent_orders as (
@@ -154,6 +178,7 @@ group by
 ### Guidelines for Effective Comments:
 #### 1. Explain Methodology:
 - Describe the reasoning behind complex calculations, transformations, or processes.
+  
 ```sql
 -- Allocating sales to regions based on customer ZIP code
 select
@@ -166,6 +191,7 @@ group by
 ```
 #### 2. Document Major Steps:
 - Use comments to outline key steps in a multi-step process.
+  
 ```sql
 -- Step 1: Retrieve orders placed in 2024
 with recent_orders as (
@@ -190,6 +216,7 @@ group by
 ## Performance Best Practices
 ### 1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
+  
 ```sql
 -- Good
 select
@@ -201,6 +228,7 @@ from
 -- Bad
 select * from CUSTOMERS;
 ```
+
 ### 2. Use Appropriate Data Types:
 - Ensure columns use the most efficient data type (e.g., `INT` for numeric IDs, `VARCHAR` for text).
 ### 3. Indexing:
@@ -211,6 +239,7 @@ select * from CUSTOMERS;
 - Avoid overly complex queries; break them into smaller, modular parts.
 ### 5. Group Aggregates Clearly:
 - Use descriptive column names for aggregates.
+  
 ```sql
 select
     DEPARTMENT,
