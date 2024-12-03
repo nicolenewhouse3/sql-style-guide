@@ -12,6 +12,7 @@ This SQL Style Guide provides coding standards and best practices to ensure cons
 
 ### Contents
 - [General Formatting](#general-formatting)
+- [Joins](#joins)
 - [Naming Conventions](#naming-conventions)
 - [Query Structure](#query-structure)
 - [Commenting](#commenting)
