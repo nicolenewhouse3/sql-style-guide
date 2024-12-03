@@ -55,9 +55,10 @@ where
 ```
 
 ## Joins
-- Use explicit join syntax (join + on) for clarity.
+- Use explicit join syntax (join + on) for clarity and to avoid Cartesian joins.
 - Always use aliases to make your queries easier to read.
 - Use the `as` keyword for explicit aliasing.
+- Qualify column names with table aliases to avoid ambiguity in multi-table joins.
   
 ```sql
 -- Good
@@ -86,6 +87,81 @@ where
     and STOCK_LEVEL < 10;
 ```
 
+### Using Different Join Types
+#### Inner Join (Most Common)
+```sql
+select
+    o.ORDER_ID,
+    c.CUSTOMER_NAME
+from
+    ORDERS as o
+join
+    CUSTOMERS as c
+on
+    o.CUSTOMER_ID = c.CUSTOMER_ID
+where
+    o.ORDER_DATE >= '2024-01-01';
+```
+- Includes all customers, even if they have no orders.
+
+#### Left Join (To Include Non-Matching Rows)
+
+```sql
+select
+    c.CUSTOMER_NAME,
+    o.ORDER_ID
+from
+    CUSTOMERS as c
+left join
+    ORDERS as o
+on
+    c.CUSTOMER_ID = o.CUSTOMER_ID
+where
+    c.REGION = 'Northwest';
+```
+- Includes all customers, even if they have no orders.
+
+#### Full Outer Join (Rarely Used)
+
+```sql
+select
+    t1.ID,
+    t1.VALUE as VALUE1,
+    t2.VALUE as VALUE2
+from
+    TABLE1 as t1
+full outer join
+    TABLE2 as t2
+on
+    t1.ID = t2.ID;
+```
+- Includes rows that match in either table, with `NULL` values for missing data.
+
+### Best Practices for Multi-Table Joins
+#### 1. Use Aliases Consistently:
+- Always use short, meaningful aliases to distinguish tables.
+#### 2. Use Qualified Column Names:
+- In queries with multiple tables, qualify column names with table aliases to avoid ambiguity.
+#### 3. Order Joins Logically:
+- Place the primary or largest table (`from`) first, followed by smaller tables, to make the logic easier to follow.
+  
+```sql
+select
+    o.ORDER_ID,
+    c.CUSTOMER_NAME,
+    p.PRODUCT_NAME
+from
+    ORDERS as o
+join
+    CUSTOMERS as c
+on
+    o.CUSTOMER_ID = c.CUSTOMER_ID
+join
+    PRODUCTS as p
+on
+    o.PRODUCT_ID = p.PRODUCT_ID;
+```
+  
 ## Common Table Expressions (CTEs):  
 - Use with Common Table Expressions (CTEs) for reusable logic and improved readability.
 - Avoid overusing nested subqueries, as they can make the code harder to understand and maintain.
@@ -142,6 +218,33 @@ from
 > - Repeating logic (e.g., filtering orders by date) increases the risk of errors if the logic needs to change.
 > - Using a CTE instead separates the filtering logic, making the query easier to maintain and understand.
 
+### When Not to Use CTEs:
+- If the logic is simple and doesn't repeat, a straightforward query might suffice.
+```sql
+-- Unnecessary CTE
+with simple_cte as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID
+    from
+        ORDERS
+    where
+        STATUS = 'Completed'
+)
+select
+    *
+from
+    simple_cte;
+
+-- Better
+select
+    ORDER_ID,
+    CUSTOMER_ID
+from
+    ORDERS
+where
+    STATUS = 'Completed';
+```
 
 ## Comments 
 - Use -- for inline comments and place them on their own line.
@@ -216,6 +319,7 @@ group by
 ## Performance Best Practices
 ### 1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
+- Selecting all columns retrieves unnecessary data, increasing query time and resource usage.
   
 ```sql
 -- Good
@@ -230,14 +334,122 @@ select * from CUSTOMERS;
 ```
 
 ### 2. Use Appropriate Data Types:
-- Ensure columns use the most efficient data type (e.g., `INT` for numeric IDs, `VARCHAR` for text).
+- Ensure columns use the most efficient data type to save storage and improve query performance. For example:
+  - Use INT for numeric IDs (instead of `VARCHAR` or `TEXT`).
+  - Use `DECIMAL` for precise financial data.
+  - For large datatypes, use `VARCHAR` or `NVARCHAR` with a defined length whenever possible for better performance.
+
+```sql
+-- Example of Efficient Data Types
+create table ORDERS (
+    ORDER_ID INT,               -- Efficient for IDs
+    CUSTOMER_ID INT,            -- Matches the referenced table
+    ORDER_TOTAL DECIMAL(10, 2), -- Precise for financial data
+    ORDER_DATE DATE             -- Specific for date storage
+);
+```
+    
 ### 3. Indexing:
-- Index columns frequently used in `where`, `join`, or `group` by clauses.
+- Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
+- **Note**: Over-indexing can slow down insert/update operations, so use indexes judiciously.
+  
+```sql
+-- Create an index on CUSTOMER_ID for faster lookups
+create index idx_customer_id on ORDERS (CUSTOMER_ID);
+
+-- Query leveraging the index
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDERS
+from
+    ORDERS
+where
+    CUSTOMER_ID = 123
+group by
+    CUSTOMER_ID;
+```
+  
 ### 4. Filter Early:
-- Use the where clause to filter rows before applying group by or having.
+- Use the where clause to filter rows as early as possible to reduce the amount of data processed in subsequent steps like `group by` or `having`.
+
+```sql
+-- Good
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDERS
+from
+    ORDERS
+where
+    STATUS = 'Shipped'          -- Filter early
+group by
+    CUSTOMER_ID;
+
+-- Bad
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDERS
+from
+    ORDERS
+group by
+    CUSTOMER_ID
+having
+    STATUS = 'Shipped';         -- Late filtering
+```
+
 ### 5.
-- Avoid overly complex queries; break them into smaller, modular parts.
-### 5. Group Aggregates Clearly:
+- Avoid overly complex queries; break complex queries into smaller, modular parts using Common Table Expressions (CTEs) or temporary tables.
+
+```sql
+-- Good: Break into smaller parts using CTEs
+with recent_orders as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID,
+        ORDER_TOTAL
+    from
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
+),
+customer_totals as (
+    select
+        CUSTOMER_ID,
+        sum(ORDER_TOTAL) as TOTAL_ORDERS
+    from
+        recent_orders
+    group by
+        CUSTOMER_ID
+)
+select
+    CUSTOMER_ID,
+    TOTAL_ORDERS
+from
+    customer_totals
+where
+    TOTAL_ORDERS > 1000;
+
+-- Bad: Overly complex query
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDERS
+from
+    (
+        select
+            ORDER_ID,
+            CUSTOMER_ID,
+            ORDER_TOTAL
+        from
+            ORDERS
+        where
+            ORDER_DATE >= '2024-01-01'
+    ) as subquery
+group by
+    CUSTOMER_ID
+having
+    sum(ORDER_TOTAL) > 1000;
+```
+  
+### 6. Group Aggregates Clearly:
 - Use descriptive column names for aggregates.
   
 ```sql
