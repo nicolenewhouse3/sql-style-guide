@@ -366,37 +366,6 @@ on
     c.CUSTOMER_ID = o.CUSTOMER_ID;
 ```
 
-## Advanced Query Techniques
-### 1. Ranking with `RANK()` and `PARTITION BY`
-#### Use Case:
-- When you need to rank rows within groups (e.g., finding the top orders by customer).
-#### Syntax
-```sql
-select
-    column1,
-    column2,
-    rank() over (partition by column_to_partition order by column_to_rank desc) as rank_column
-from
-    table_name;
-```
-#### Example
-- Find the top-ranked orders for each customer based on ORDER_TOTAL.
-```sql
-select
-    CUSTOMER_ID,
-    ORDER_ID,
-    ORDER_TOTAL,
-    rank() over (
-        partition by CUSTOMER_ID
-        order by ORDER_TOTAL desc
-    ) as ORDER_RANK
-from
-    ORDERS;
-```
-  - The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
-  - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
-
-  
   
 ## Performance Best Practices
 ### 1. Avoid `select *`
@@ -544,6 +513,145 @@ group by
     DEPARTMENT
 having
     EMPLOYEE_COUNT > 5;
+```
+
+## Advanced Query Techniques
+### 1. Ranking with `RANK()` and `PARTITION BY`
+#### Use Case:
+- When you need to rank rows within groups (e.g., finding the top orders by customer).
+#### Syntax
+```sql
+select
+    column1,
+    column2,
+    rank() over (partition by column_to_partition order by column_to_rank desc) as rank_column
+from
+    table_name;
+```
+#### Example
+- Find the top-ranked orders for each customer based on ORDER_TOTAL.
+```sql
+select
+    CUSTOMER_ID,
+    ORDER_ID,
+    ORDER_TOTAL,
+    rank() over (
+        partition by CUSTOMER_ID
+        order by ORDER_TOTAL desc
+    ) as ORDER_RANK
+from
+    ORDERS;
+```
+  - The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
+  - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
+
+### 2. Pivoting Data
+#### Use Case:
+- Convert rows into columns for easier reporting or analysis.
+#### Syntax  
+```sql
+select
+    pivoted_columns
+from
+    (select ...) as source_table
+pivot (
+    aggregate_function(column_to_aggregate)
+    for column_to_pivot in (value1, value2, ...)
+) as pivoted_table;
+```
+#### Example
+- Convert sales data into a pivoted format, showing total sales for each region by year.
+``` sql
+select
+    REGION,
+    [2022] as SALES_2022,
+    [2023] as SALES_2023
+from
+    (select
+         REGION,
+         YEAR(SALE_DATE) as SALE_YEAR,
+         SALE_AMOUNT
+     from
+         SALES) as source_data
+pivot (
+    sum(SALE_AMOUNT)
+    for SALE_YEAR in ([2022], [2023])
+) as pivoted_data;
+```
+
+### 2. Unpivoting Data
+#### Use Case:
+- Convert columns into rows, often to normalize a dataset.
+#### Syntax  
+```sql
+select
+    column1,
+    column2,
+    unpivoted_column,
+    value_column
+from
+    table_name
+unpivot (
+    value_column for unpivoted_column in (column_to_unpivot1, column_to_unpivot2, ...)
+) as unpivoted_table;
+```
+#### Example
+- Unpivot sales data to analyze it row-wise by year.
+```sql
+select
+    REGION,
+    SALE_YEAR,
+    SALE_AMOUNT
+from
+    (select
+         REGION,
+         SALES_2022,
+         SALES_2023
+     from
+         SALES_BY_YEAR) as source_data
+unpivot (
+    SALE_AMOUNT for SALE_YEAR in ([SALES_2022], [SALES_2023])
+) as unpivoted_data;
+```
+> [!TIP]
+> #### Use Dynamic SQL for Unpivoting when Many Columns are Present
+> - When you have many columns to unpivot, manually listing them can be tedious and error-prone. Dynamic SQL can automate this process by dynamically identifying all the columns in a table.
+> ```sql
+>-- Step 1: Dynamically generate the column list for UNPIVOT
+>declare @columns nvarchar(max);
+>declare @sql nvarchar(max);
+>
+>select
+>    @columns = string_agg(quotename(COLUMN_NAME), ',')
+>from
+>    INFORMATION_SCHEMA.COLUMNS
+>where
+>    TABLE_NAME = 'SALES_BY_YEAR'
+>    and COLUMN_NAME like 'SALES_%';
+>
+>-- Step 2: Use the dynamically generated column list to construct the UNPIVOT query.
+>set @sql = '
+>select
+>    REGION,
+>    SALE_YEAR,
+>    SALE_AMOUNT
+>from
+>    (select REGION, ' + @columns + ' from SALES_BY_YEAR) as source_data
+>unpivot (
+>    SALE_AMOUNT for SALE_YEAR in (' + @columns + ')
+>) as unpivoted_data;
+>';
+>
+>-- Step 3: Execute the dynamic query
+>exec sp_executesql @sql;
+>```
+
+### 2. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
+#### Use Case:
+- Convert columns into rows, often to normalize a dataset.
+#### Syntax  
+```sql
+
 ```
 
 ## Naming Conventions
