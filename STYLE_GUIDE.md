@@ -316,57 +316,130 @@ where
     STATUS = 'Completed';
 ```
 
-## Handling NULL Values
-- Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
-  
+## Keys and Indexing
+### 1. Primary Keys
+- **Definition**:
+  - A **primary key** is a column (or combination of columns) that uniquely identifies each row in a table. It:
+    - Ensures uniqueness: No two rows can have the same value for the primary key column.
+    - Prevents null values: The column(s) in a primary key must always have a value.
+    - Automatically creates an index: A primary key typically creates a **clustered index** on the specified column(s).
+- **Use Case**:
+  - Use primary keys to uniquely identify each row in a table, such as `ORDER_ID` or `CUSTOMER_ID`.
+- **Example**:  
 ```sql
--- Good: Using COALESCE
-with customer_orders as (
-    select
-        CUSTOMER_ID,
-        count(*) as TOTAL_ORDERS
-    from
-        ORDERS
-    group by
-        CUSTOMER_ID
-)
-select
-    c.CUSTOMER_ID,
-    c.CUSTOMER_NAME,
-    coalesce(o.TOTAL_ORDERS, 0) as TOTAL_ORDERS
-from
-    CUSTOMERS as c
-left join
-    customer_orders as o
-on
-    c.CUSTOMER_ID = o.CUSTOMER_ID;
+create table ORDERS (
+    ORDER_ID int not null primary key, -- Unique identifier for each order
+    CUSTOMER_ID int not null,
+    ORDER_DATE date not null,
+    ORDER_TOTAL decimal(10, 2)
+);
+```
+- **Best Practices**:
+  - Choose a column with immutable and unique values (e.g., an auto-incrementing integer or a UUID).
+  - Avoid using large columns (e.g., `VARCHAR(MAX)`) as primary keys, as they increase storage and query costs.
+  - Use surrogate keys (e.g., generated IDs) if no natural unique identifier exists.
 
--- Bad: Using a CASE Statement
-with customer_orders as (
-    select
-        CUSTOMER_ID,
-        count(*) as TOTAL_ORDERS
-    from
-        ORDERS
-    group by
-        CUSTOMER_ID
-)
-select
-    c.CUSTOMER_ID,
-    c.CUSTOMER_NAME,
-    case
-        when o.TOTAL_ORDERS is null then 0
-        else o.TOTAL_ORDERS
-    end as TOTAL_ORDERS
-from
-    CUSTOMERS as c
-left join
-    customer_orders as o
-on
-    c.CUSTOMER_ID = o.CUSTOMER_ID;
+### 2. Foreign Keys
+- **Definition**:
+  - A **foreign key** creates a relationship between two tables by linking a column in one table (child table) to the primary key in another table (parent table).
+  - It enforces **referential integrity**, ensuring that data in the child table corresponds to data in the parent table.
+- **Use Case**:
+  - Use foreign keys to maintain relationships between tables, such as linking `ORDERS` to `CUSTOMERS`.
+- **Example**:
+```sql
+create table CUSTOMERS (
+    CUSTOMER_ID int primary key,
+    CUSTOMER_NAME varchar(100) not null
+);
+
+create table ORDERS (
+    ORDER_ID int primary key,
+    CUSTOMER_ID int not null,
+    ORDER_TOTAL decimal(10, 2),
+    foreign key (CUSTOMER_ID) references CUSTOMERS(CUSTOMER_ID)
+);
+```
+- **Best Practices**:
+  -  Always index foreign key columns for better performance.
+  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
+
+### 3. Clustered and Non-clustered Indexes
+- **Definition**:
+  - Indexes improve the speed of data retrieval operations.
+  - Proper use of indexes balances performance and storage requirements.
+- **Clustered Index:**:
+  - Determines the physical order of rows in a table.
+  - A table can have only one **clustered index**, usually created on the primary key.
+- **Non-Clustered Index:**
+  - A separate structure from the table that points to the data rows.
+  - Useful for columns frequently used in `WHERE`, `JOIN`, or `GROUP BY` clauses.
+- **Example**:
+```sql
+-- Clustered index on primary key (default behavior)
+create table ORDERS (
+    ORDER_ID int not null primary key clustered,
+    ORDER_DATE date not null
+);
+
+-- Non-clustered index on ORDER_DATE
+create nonclustered index idx_order_date on ORDERS (ORDER_DATE);
 ```
 
-  
+### 4. Covering Indexes
+- **Definition**:
+  - A **covering index** includes all columns referenced in a query, allowing the database to retrieve results directly from the index without accessing the base table.
+- **Use Case:**:
+  - Covering indexes are ideal for queries that repeatedly access specific column subsets.
+- **Example**:
+```sql
+-- Create a covering index for a query that retrieves ORDER_TOTAL and ORDER_DATE
+create index idx_covering on ORDERS (CUSTOMER_ID, ORDER_TOTAL, ORDER_DATE);
+
+-- Query optimized by the covering index
+select
+    CUSTOMER_ID,
+    ORDER_TOTAL,
+    ORDER_DATE
+from
+    ORDERS
+where
+    CUSTOMER_ID = 123;
+```
+### 5. Indexing Best Practices:
+- Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
+- **Note**:
+  - Over-indexing can slow down insert/update operations, so use indexes judiciously.
+  - Regularly analyze query performance and remove unused indexes.
+```sql
+-- Create an index on CUSTOMER_ID for faster lookups
+create index idx_customer_id on ORDERS (CUSTOMER_ID);
+
+-- Query leveraging the index
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDERS
+from
+    ORDERS
+where
+    CUSTOMER_ID = 123
+group by
+    CUSTOMER_ID;
+```
+
+> [!TIP]
+> #### Follow consistent and descriptive naming conventions for keys and indexes:
+> - **Primary Keys**: `pk_<table_name>`
+> - **Foreign Keys**: `fk_<child_table>_<parent_table>`
+> - **Indexes**: `idx_<table_name>_<column_name>`
+>#### **Example**:
+>```sql
+>create table ORDERS (
+>    ORDER_ID int not null primary key constraint pk_orders_order_id,
+>    CUSTOMER_ID int not null,
+>    constraint fk_orders_customers foreign key (CUSTOMER_ID) references CUSTOMERS(CUSTOMER_ID)
+>);
+>```
+    
 ## Performance Best Practices
 ### 1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
@@ -400,26 +473,50 @@ create table ORDERS (
 );
 ```
     
-### 3. Indexing:
-- Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
-- **Note**: Over-indexing can slow down insert/update operations, so use indexes judiciously.
-  
+### 4. Creating tables vs. `SELECT INTO`:
+- Manually defining a table’s schema before inserting data gives you full control over its structure, indexes, and constraints.
+  -   Allows for schema validation, ensuring column types and constraints match your requirements.
+  -   Enables adding indexes or constraints before inserting data for better query performance.
+  -   Easier to maintain and extend in the future.
+- `SELECT INTO` should be reserved for temporary operations of ad-hoc queries
 ```sql
--- Create an index on CUSTOMER_ID for faster lookups
-create index idx_customer_id on ORDERS (CUSTOMER_ID);
+-- Good: Manually defining the table schema with a primary key
+create table TEMP_ORDERS (
+    ORDER_ID int not null primary key, -- Adding a primary key to ensure uniqueness
+    CUSTOMER_ID int not null,
+    ORDER_DATE date not null,
+    ORDER_TOTAL decimal(10, 2)
+);
 
--- Query leveraging the index
+insert into TEMP_ORDERS
 select
+    ORDER_ID,
     CUSTOMER_ID,
-    sum(ORDER_TOTAL) as TOTAL_ORDERS
+    ORDER_DATE,
+    ORDER_TOTAL
 from
     ORDERS
 where
-    CUSTOMER_ID = 123
-group by
-    CUSTOMER_ID;
+    ORDER_DATE >= '2024-01-01';
+
+-- Bad: Using SELECT INTO without pre-defining the schema
+select
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+into
+    TEMP_ORDERS
+from
+    ORDERS
+where
+    ORDER_DATE >= '2024-01-01';
+
+-- Adding a primary key constraint after the table is created
+alter table TEMP_ORDERS
+add constraint pk_temp_orders primary key (ORDER_ID);
 ```
-  
+
 ### 4. Filter Early:
 - Use the where clause to filter rows as early as possible to reduce the amount of data processed in subsequent steps like `group by` or `having`.
 
@@ -502,7 +599,6 @@ having
   
 ### 6. Group Aggregates Clearly:
 - Use descriptive column names for aggregates.
-  
 ```sql
 select
     DEPARTMENT,
@@ -515,37 +611,57 @@ having
     EMPLOYEE_COUNT > 5;
 ```
 
-## Advanced Query Techniques
-### 1. Ranking with `RANK()` and `PARTITION BY`
-#### Use Case:
-- When you need to rank rows within groups (e.g., finding the top orders by customer).
-#### Syntax
+### 7. Use `COALESCE` for Handling NULL Values
+- Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
 ```sql
+-- Good: Using COALESCE
+with customer_orders as (
+    select
+        CUSTOMER_ID,
+        count(*) as TOTAL_ORDERS
+    from
+        ORDERS
+    group by
+        CUSTOMER_ID
+)
 select
-    column1,
-    column2,
-    rank() over (partition by column_to_partition order by column_to_rank desc) as rank_column
+    c.CUSTOMER_ID,
+    c.CUSTOMER_NAME,
+    coalesce(o.TOTAL_ORDERS, 0) as TOTAL_ORDERS
 from
-    table_name;
-```
-#### Example
-- Find the top-ranked orders for each customer based on ORDER_TOTAL.
-```sql
-select
-    CUSTOMER_ID,
-    ORDER_ID,
-    ORDER_TOTAL,
-    rank() over (
-        partition by CUSTOMER_ID
-        order by ORDER_TOTAL desc
-    ) as ORDER_RANK
-from
-    ORDERS;
-```
-  - The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
-  - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
+    CUSTOMERS as c
+left join
+    customer_orders as o
+on
+    c.CUSTOMER_ID = o.CUSTOMER_ID;
 
-### 2. Pivoting Data
+-- Bad: Using a CASE Statement
+with customer_orders as (
+    select
+        CUSTOMER_ID,
+        count(*) as TOTAL_ORDERS
+    from
+        ORDERS
+    group by
+        CUSTOMER_ID
+)
+select
+    c.CUSTOMER_ID,
+    c.CUSTOMER_NAME,
+    case
+        when o.TOTAL_ORDERS is null then 0
+        else o.TOTAL_ORDERS
+    end as TOTAL_ORDERS
+from
+    CUSTOMERS as c
+left join
+    customer_orders as o
+on
+    c.CUSTOMER_ID = o.CUSTOMER_ID;
+```
+  
+## Advanced Query Techniques
+### 1. Pivoting Data
 #### Use Case:
 - Convert rows into columns for easier reporting or analysis.
 #### Syntax  
@@ -646,22 +762,143 @@ unpivot (
 >exec sp_executesql @sql;
 >```
 
-### 2. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
+### 3. Ranking with `RANK()` and `PARTITION BY`
 #### Use Case:
-- Convert columns into rows, often to normalize a dataset.
+- When you need to rank rows within groups (e.g., finding the top orders by customer).
+#### Syntax
+```sql
+select
+    column1,
+    column2,
+    rank() over (partition by column_to_partition order by column_to_rank desc) as rank_column
+from
+    table_name;
+```
+#### Example
+- Find the top-ranked orders for each customer based on ORDER_TOTAL.
+```sql
+select
+    CUSTOMER_ID,
+    ORDER_ID,
+    ORDER_TOTAL,
+    rank() over (
+        partition by CUSTOMER_ID
+        order by ORDER_TOTAL desc
+    ) as ORDER_RANK
+from
+    ORDERS;
+```
+  - The `PARTITION BY` clause groups rows by `CUSTOMER_ID`.
+  - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
+
+    
+### 4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
+#### Use Case:
+- Fill `NULL` values in a column with the average value of that column, calculated within groups (e.g., by `REGION`).
 #### Syntax  
 ```sql
-
 ```
+#### Example
+- Suppose you have a sales table with `NULL` values in the `SALE_AMOUNT` column. You want to replace these `NULL` values with the average sales for the same `REGION`.
+```sql
+select
+    REGION,
+    SALE_ID,
+    coalesce(SALE_AMOUNT, avg(SALE_AMOUNT) over (partition by REGION)) as IMPUTED_SALE_AMOUNT
+from
+    SALES;
+```
+- `avg(SALE_AMOUNT) over (partition by REGION)` calculates the average sales amount for each region.
+- `coalesce` replaces `NULL` values in `SALE_AMOUNT` with the computed average for that region.
 
-## Naming Conventions
-### 1. Tables and Columns:
-- Use **UPPERCASE** for table and column names.
-- Use **snake_case** for naming: `CUSTOMER_ID`, `ORDER_DATE`.
-### 2. Primary Keys:
-- Name primary keys as `id` or `TABLE_NAME_ID`.
-### 3. Foreign Keys:
-- Use `REFERENCED_TABLE_NAME_ID` for foreign keys.
+### 5. Rolling Averages with `PARTITION BY`
+#### Use Case:
+- Calculate a rolling average of sales within groups (e.g., by `REGION`).
+#### Syntax  
+```sql
+```
+#### Example
+```sql
+select
+    REGION,
+    SALE_DATE,
+    SALE_AMOUNT,
+    avg(SALE_AMOUNT) over (
+        partition by REGION
+        order by SALE_DATE
+        rows between 2 preceding and current row
+    ) as ROLLING_AVG
+from
+    SALES;
+```
+- The `rows between 2 preceding and current row` clause specifies a 3-row rolling window (current row + 2 previous rows).
+- `partition by REGION` ensures rolling averages are calculated separately for each region.
+
+### 6. Finding Percentiles with `NTILE`
+#### Use Case:
+- Distribute rows into quartiles or other equal-sized groups.
+#### Syntax  
+```sql
+```
+#### Example
+```sql
+select
+    SALE_ID,
+    SALE_AMOUNT,
+    ntile(4) over (
+        order by SALE_AMOUNT
+    ) as QUARTILE
+from
+    SALES;
+```
+- `ntile(4)` divides the dataset into four equal parts (quartiles) based on `SALE_AMOUNT`.
+
+### 7. Case-Specific Aggregations 
+#### Use Case:
+- Calculate different metrics for different conditions within the same query.
+#### Syntax  
+```sql
+```
+#### Example
+```sql
+select
+    REGION,
+    sum(case when SALE_AMOUNT > 100 then SALE_AMOUNT else 0 end) as HIGH_VALUE_SALES,
+    sum(case when SALE_AMOUNT <= 100 then SALE_AMOUNT else 0 end) as LOW_VALUE_SALES
+from
+    SALES
+group by
+    REGION;
+```
+- Conditional aggregation with `CASE` allows you to compute metrics for specific conditions.
+
+### 8. Case-Specific Aggregations 
+#### Use Case:
+- Compare a row’s value with the previous or next row within a group.
+- Helpful in calculating YoY percent change in long format.
+#### Syntax  
+```sql
+```
+#### Example
+```sql
+select
+    REGION,
+    SALE_DATE,
+    SALE_AMOUNT,
+    lag(SALE_AMOUNT) over (
+        partition by REGION
+        order by SALE_DATE
+    ) as PREVIOUS_SALE,
+    lead(SALE_AMOUNT) over (
+        partition by REGION
+        order by SALE_DATE
+    ) as NEXT_SALE
+from
+    SALES;
+```
+- `lag` retrieves the value from the previous row.
+- `lead` retrieves the value from the next row.
+
 
 ## Error Handling
 Debugging and Error Handling
