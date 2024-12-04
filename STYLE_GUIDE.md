@@ -4,13 +4,25 @@ This guide outlines best practices and conventions for writing clean, maintainab
 ## General Formatting
 ### Line Breaks
 - Place each clause (`select`, `from`, `where`, etc.) on a new line.
-- Align `and/or` in conditions under the where clause.
+```sql
+-- Good
+select
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_DATE
+from
+    ORDERS
+where
+    STATUS = 'Completed';
+
+-- Bad
+SELECT ORDER_ID, CUSTOMER_ID, ORDER_DATE FROM ORDERS WHERE STATUS='Completed';
+```
+
 ### Indentation
 - Place each variable on its own line, indented under the keyword it belongs to.
 - Keep SQL keywords (`select`, `from`, `where`) aligned to the left.
-### Capitalization
-- Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
-- Use **UPPERCASE** for table and column names to make them stand out.
+- Add a new line for each `AND` or `OR` in `WHERE` conditions, aligning them under the `WHERE` keyword.
 ```sql
 -- Good
 select
@@ -21,11 +33,37 @@ from
     CUSTOMERS
 where
     CITY = 'Chicago'
-    and STATE = 'IL';
+    and STATE = 'IL'
+    and ZIP_CODE = '60601';
 
 -- Bad
-SELECT CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_EMAIL FROM CUSTOMERS WHERE CITY='Chicago' AND STATE='IL';
+SELECT CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_EMAIL
+FROM CUSTOMERS
+WHERE CITY='Chicago' AND STATE='IL' AND ZIP_CODE='60601';
 ```
+
+### Capitalization
+- Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
+- Use **UPPERCASE** for table and column names to make them stand out.
+```sql
+-- Good
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME
+from
+    CUSTOMERS
+where
+    CUSTOMER_NAME like 'A%';
+
+-- Bad
+SELECT
+    customer_id,
+    customer_name
+FROM
+    customers
+WHERE
+    customer_name LIKE 'A%';
+ ``` 
 
 ### White Space Around Symbols
 - Always include white space around operators like `=`, `*`, `-`, and `+` to improve readability.
@@ -43,9 +81,16 @@ where
     and DISCOUNT > 0;
 
 -- Bad
-select CUSTOMER_ID, CUSTOMER_NAME, (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100) as FINAL_TOTAL, (YEAR(GETDATE())-YEAR(REGISTRATION_DATE)) as YEARS_AS_CUSTOMER
-from ORDERS
-where (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100)>500 and DISCOUNT>0;
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME,
+    (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100) as FINAL_TOTAL,
+    (YEAR(GETDATE())-YEAR(REGISTRATION_DATE)) as YEARS_AS_CUSTOMER
+from
+    ORDERS
+where
+    (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100)>500
+    and DISCOUNT>0;
 ```
 
 ## Comments 
@@ -79,41 +124,43 @@ group by
     CUSTOMER_ID;
 ```
 
-### Guidelines for Effective Comments:
-#### 1. Explain Methodology:
-- Describe the reasoning behind complex calculations, transformations, or processes.
-```sql
--- Allocating sales to regions based on customer ZIP code
-select
-    REGION,
-    sum(SALES) as TOTAL_SALES
-from
-    SALES_DATA
-group by
-    REGION;
-```
-#### 2. Document Major Steps:
-- Use comments to outline key steps in a multi-step process.
-```sql
--- Step 1: Retrieve orders placed in 2024
-with recent_orders as (
-    select
-        ORDER_ID,
-        CUSTOMER_ID
-    from
-        ORDERS
-    where
-        ORDER_DATE >= '2024-01-01'
-)
--- Step 2: Calculate total sales by customer
-select
-    CUSTOMER_ID,
-    count(ORDER_ID) as TOTAL_ORDERS
-from
-    recent_orders
-group by
-    CUSTOMER_ID;
-```
+> [!TIP]
+> ### Guidelines for Effective Comments:
+> #### 1. Focus on the "why," not the "how":
+> - Use comments to explain the reasoning behind your approach, such as the logic or business rules being applied, rather than describing the code's functionality line by line.
+> - Avoid redundant comments; if the code is self-explanatory, additional comments about what the code does are unnecessary.
+> ```sql
+> -- Allocating sales to regions based on customer ZIP code
+> select
+>     REGION,
+>     sum(SALES) as TOTAL_SALES
+> from
+>     SALES_DATA
+> group by
+>     REGION;
+> ```
+> #### 2. Document Major Steps:
+> - Use comments to outline key steps in a multi-step process.
+> ```sql
+> -- Step 1: Retrieve orders placed in 2024
+> with recent_orders as (
+>     select
+>         ORDER_ID,
+>         CUSTOMER_ID
+>     from
+>         ORDERS
+>     where
+>         ORDER_DATE >= '2024-01-01'
+> )
+> -- Step 2: Calculate total sales by customer
+> select
+>     CUSTOMER_ID,
+>     count(ORDER_ID) as TOTAL_ORDERS
+> from
+>     recent_orders
+> group by
+>     CUSTOMER_ID;
+> ```
 
 ## Joins
 - Use explicit join syntax (join + on) for clarity and to avoid Cartesian joins.
@@ -271,8 +318,8 @@ on
 ```
 > [!TIP]
 > #### Avoid Nested or Interdependent CTEs
-> Each CTE should be independently executable without relying on other CTEs. This improves debugging, as each part of the query can be validated in isolation.
-> If one CTE depends on another, consider using temporary tables to materialize intermediate results.
+> - Each CTE should be independently executable without relying on other CTEs. This improves debugging, as each part of the query can be validated in isolation.
+> - If one CTE depends on another, consider using temporary tables to materialize intermediate results.
 >```sql
 >-- Good
 >with recent_order_totals as (
@@ -325,6 +372,7 @@ on
 >     customer_totals as ct
 > on
 >     c.CUSTOMER_ID = ct.CUSTOMER_ID;
+>```
 
 
 > [!WARNING]
@@ -332,7 +380,7 @@ on
 > - If the logic is simple and doesn't repeat, a straightforward query might suffice.
 >```sql
 >-- Unnecessary CTE
->with simple_cte as (
+> with simple_cte as (
 >    select
 >        ORDER_ID,
 >        CUSTOMER_ID
@@ -341,20 +389,20 @@ on
 >    where
 >        STATUS = 'Completed'
 >)
->select
+> select
 >    *
->from
+> from
 >    simple_cte;
 >
 >-- Better
->select
+> select
 >    ORDER_ID,
 >    CUSTOMER_ID
->from
+> from
 >    ORDERS
->where
+> where
 >    STATUS = 'Completed';
->```
+> ```
 
 ## Keys and Indexing
 ### 1. Primary Keys
@@ -400,6 +448,7 @@ create table ORDERS (
     foreign key (CUSTOMER_ID) references CUSTOMERS(CUSTOMER_ID)
 );
 ```
+> [!TIP] 
 > **Best Practices**:
 >  -  Always index foreign key columns for better performance.
 >  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
