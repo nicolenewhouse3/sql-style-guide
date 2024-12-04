@@ -2,16 +2,15 @@
 This guide outlines best practices and conventions for writing clean, maintainable, and efficient SQL code. By adhering to these guidelines, teams can improve code readability, simplify collaboration, and ensure consistency across projects.
 
 ## General Formatting
-### Capitalization
-- Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
-- Use **UPPERCASE** for table and column names to make them stand out.
-### Indentation
-- Place each variable on its own line, indented under the keyword it belongs to.
-- Keep SQL keywords (`select`, `from`, `where`) aligned to the left.
 ### Line Breaks
 - Place each clause (`select`, `from`, `where`, etc.) on a new line.
 - Align `and/or` in conditions under the where clause.
-  
+### Indentation
+- Place each variable on its own line, indented under the keyword it belongs to.
+- Keep SQL keywords (`select`, `from`, `where`) aligned to the left.
+### Capitalization
+- Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
+- Use **UPPERCASE** for table and column names to make them stand out.
 ```sql
 -- Good
 select
@@ -35,23 +34,18 @@ SELECT CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_EMAIL FROM CUSTOMERS WHERE CITY='Chi
 select
     CUSTOMER_ID,
     CUSTOMER_NAME,
-    ORDER_TOTAL * 1.05 as TOTAL_WITH_TAX
+    (ORDER_TOTAL - DISCOUNT) * (1 + TAX_RATE / 100) as FINAL_TOTAL,
+    (YEAR(GETDATE()) - YEAR(REGISTRATION_DATE)) as YEARS_AS_CUSTOMER
 from
     ORDERS
 where
-    ORDER_TOTAL > 100
-    and DISCOUNT = 0;
+    (ORDER_TOTAL - DISCOUNT) * (1 + TAX_RATE / 100) > 500
+    and DISCOUNT > 0;
 
 -- Bad
-select
-    CUSTOMER_ID,
-    CUSTOMER_NAME,
-    ORDER_TOTAL*1.05 as TOTAL_WITH_TAX
-from
-    ORDERS
-where
-    ORDER_TOTAL>100
-    and DISCOUNT=0;
+select CUSTOMER_ID, CUSTOMER_NAME, (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100) as FINAL_TOTAL, (YEAR(GETDATE())-YEAR(REGISTRATION_DATE)) as YEARS_AS_CUSTOMER
+from ORDERS
+where (ORDER_TOTAL-DISCOUNT)*(1+TAX_RATE/100)>500 and DISCOUNT>0;
 ```
 
 ## Comments 
@@ -59,7 +53,6 @@ where
 - Comments should be used **minimally**, aligning with best coding practices. 
   - If the code is clear, concise, and explains the logic straightforwardly, additional comments are unnecessary.
 - Use comments to explain **methodology** or **major process steps**, not to restate what the code is doing.
-
 ```sql
 -- Good
 -- Calculate total sales for each customer in 2024
@@ -89,7 +82,6 @@ group by
 ### Guidelines for Effective Comments:
 #### 1. Explain Methodology:
 - Describe the reasoning behind complex calculations, transformations, or processes.
-  
 ```sql
 -- Allocating sales to regions based on customer ZIP code
 select
@@ -102,7 +94,6 @@ group by
 ```
 #### 2. Document Major Steps:
 - Use comments to outline key steps in a multi-step process.
-  
 ```sql
 -- Step 1: Retrieve orders placed in 2024
 with recent_orders as (
@@ -129,7 +120,6 @@ group by
 - Always use aliases to make your queries easier to read.
 - Use the `as` keyword for explicit aliasing.
 - Qualify column names with table aliases to avoid ambiguity in multi-table joins.
-  
 ```sql
 -- Good
 select
@@ -158,7 +148,10 @@ where
 ```
 
 ### Using Different Join Types
-#### Inner Join (Most Common)
+#### 1. Inner Join (Most Common)
+- **Defintion**: Returns only the rows where there is a match in both tables.
+- **Use Case**: Used to retrieve data that exists in both tables.
+- **Example**: Only includes customers that are present in both tables.
 ```sql
 select
     o.ORDER_ID,
@@ -172,10 +165,12 @@ on
 where
     o.ORDER_DATE >= '2024-01-01';
 ```
-  - Includes all customers, even if they have no orders.
 
-#### Left Join (To Include Non-Matching Rows)
 
+#### 2. Left Join (To Include Non-Matching Rows)
+- **Defintion**: Returns all rows from the left table, and the matching rows from the right table. If there’s no match, `NULL` values are returned for the right table’s columns.
+- **Use Case**: Use when you want to keep all rows from the left table, even if there are no matches in the right table.
+- **Example**: Includes all customers, even if they have no orders.
 ```sql
 select
     c.CUSTOMER_NAME,
@@ -189,10 +184,11 @@ on
 where
     c.REGION = 'Northwest';
 ```
-  - Includes all customers, even if they have no orders.
 
-#### Full Outer Join (Rarely Used)
-
+#### 3. Full Outer Join (Rarely Used)
+- **Defintion**: Returns all rows from both tables. For rows without a match in the other table, `NULL` values are returned for the unmatched columns.
+- **Use Case**: Use when you need all rows from both tables, regardless of whether they match.
+- **Example**: Includes rows that match in either table, with `NULL` values for missing data.
 ```sql
 select
     t1.ID,
@@ -205,55 +201,41 @@ full outer join
 on
     t1.ID = t2.ID;
 ```
-  - Includes rows that match in either table, with `NULL` values for missing data.
 
 ### Best Practices for Multi-Table Joins
-#### 1. Use Aliases Consistently:
-- Always use short, meaningful aliases to distinguish tables.
-#### 2. Use Qualified Column Names:
-- In queries with multiple tables, qualify column names with table aliases to avoid ambiguity.
-#### 3. Order Joins Logically:
-- Place the primary or largest table (`from`) first, followed by smaller tables, to make the logic easier to follow.
-  
-```sql
-select
-    o.ORDER_ID,
-    c.CUSTOMER_NAME,
-    p.PRODUCT_NAME
-from
-    ORDERS as o
-join
-    CUSTOMERS as c
-on
-    o.CUSTOMER_ID = c.CUSTOMER_ID
-join
-    PRODUCTS as p
-on
-    o.PRODUCT_ID = p.PRODUCT_ID;
-```
+ - **Use Aliases Consistently**: Always use short, meaningful aliases to distinguish tables.
+ - **Use Qualified Column Names**: In queries with multiple tables, qualify column names with table aliases to avoid ambiguity.
+ - **Order Joins Logically**: Place the primary or largest table (`from`) first, followed by smaller tables, to make the logic easier to follow.
+ ```sql
+ select
+     o.ORDER_ID,
+     c.CUSTOMER_NAME,
+     p.PRODUCT_NAME
+ from
+     ORDERS as o
+ join
+     CUSTOMERS as c
+ on
+     o.CUSTOMER_ID = c.CUSTOMER_ID
+ join
+     PRODUCTS as p
+ on
+     o.PRODUCT_ID = p.PRODUCT_ID;
+ ```
   
 ## Common Table Expressions (CTEs):  
 - Use with Common Table Expressions (CTEs) for reusable logic and improved readability.
 - Avoid overusing nested subqueries, as they can make the code harder to understand and maintain.
-  
 ```sql
 -- Good
-with recent_orders as (
-    select
-        ORDER_ID,
-        CUSTOMER_ID,
-        ORDER_DATE
-    from
-        ORDERS
-    where
-        ORDER_DATE >= '2024-01-01'
-),
-customer_totals as (
+with recent_order_totals as (
     select
         CUSTOMER_ID,
         count(ORDER_ID) as TOTAL_ORDERS
     from
-        recent_orders
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
     group by
         CUSTOMER_ID
 )
@@ -270,51 +252,109 @@ on
 -- Bad
 select
     c.CUSTOMER_NAME,
-    (
-        select
-            count(o.ORDER_ID)
-        from
-            ORDERS as o
-        where
-            o.CUSTOMER_ID = c.CUSTOMER_ID
-            and o.ORDER_DATE >= '2024-01-01'
-    ) as TOTAL_ORDERS
+    ct.TOTAL_ORDERS
 from
-    CUSTOMERS as c;
+    CUSTOMERS as c
+join (
+    select
+        o.CUSTOMER_ID,
+        count(o.ORDER_ID) as TOTAL_ORDERS
+    from
+        ORDERS as o
+    where
+        o.ORDER_DATE >= '2024-01-01'
+    group by
+        o.CUSTOMER_ID
+) as ct
+on
+    c.CUSTOMER_ID = ct.CUSTOMER_ID;
 ```
 > [!TIP]
-> #### Why is the "Bad" Example Problematic?
-> - The nested subquery inside the `SELECT` clause makes the query harder to read and debug.
-> - Repeating logic (e.g., filtering orders by date) increases the risk of errors if the logic needs to change.
-> - Using a CTE instead separates the filtering logic, making the query easier to maintain and understand.
+> #### Avoid Nested or Interdependent CTEs
+> Each CTE should be independently executable without relying on other CTEs. This improves debugging, as each part of the query can be validated in isolation.
+> If one CTE depends on another, consider using temporary tables to materialize intermediate results.
+>```sql
+>-- Good
+>with recent_order_totals as (
+>    select
+>        CUSTOMER_ID,
+>        count(ORDER_ID) as TOTAL_ORDERS
+>    from
+>        ORDERS
+>    where
+>        ORDER_DATE >= '2024-01-01'
+>    group by
+>        CUSTOMER_ID
+>)
+>select
+>    c.CUSTOMER_NAME,
+>    ct.TOTAL_ORDERS
+>from
+>    CUSTOMERS as c
+>join
+>    customer_totals as ct
+>on
+>  c.CUSTOMER_ID = ct.CUSTOMER_ID;
+>
+> -- Bad
+> with recent_orders as (
+>     select
+>         ORDER_ID,
+>         CUSTOMER_ID,
+>         ORDER_DATE
+>     from
+>         ORDERS
+>     where
+>         ORDER_DATE >= '2024-01-01'
+> ),
+> customer_totals as (
+>     select
+>         CUSTOMER_ID,
+>         count(ORDER_ID) as TOTAL_ORDERS
+>     from
+>         recent_orders
+>     group by
+>         CUSTOMER_ID
+> )
+> select
+>     c.CUSTOMER_NAME,
+>     ct.TOTAL_ORDERS
+> from
+>     CUSTOMERS as c
+> join
+>     customer_totals as ct
+> on
+>     c.CUSTOMER_ID = ct.CUSTOMER_ID;
 
-### When Not to Use CTEs:
-- If the logic is simple and doesn't repeat, a straightforward query might suffice.
-```sql
--- Unnecessary CTE
-with simple_cte as (
-    select
-        ORDER_ID,
-        CUSTOMER_ID
-    from
-        ORDERS
-    where
-        STATUS = 'Completed'
-)
-select
-    *
-from
-    simple_cte;
 
--- Better
-select
-    ORDER_ID,
-    CUSTOMER_ID
-from
-    ORDERS
-where
-    STATUS = 'Completed';
-```
+> [!WARNING]
+> #### When Not to Use CTEs:
+> - If the logic is simple and doesn't repeat, a straightforward query might suffice.
+>```sql
+>-- Unnecessary CTE
+>with simple_cte as (
+>    select
+>        ORDER_ID,
+>        CUSTOMER_ID
+>    from
+>        ORDERS
+>    where
+>        STATUS = 'Completed'
+>)
+>select
+>    *
+>from
+>    simple_cte;
+>
+>-- Better
+>select
+>    ORDER_ID,
+>    CUSTOMER_ID
+>from
+>    ORDERS
+>where
+>    STATUS = 'Completed';
+>```
 
 ## Keys and Indexing
 ### 1. Primary Keys
@@ -334,10 +374,11 @@ create table ORDERS (
     ORDER_TOTAL decimal(10, 2)
 );
 ```
-- **Best Practices**:
-  - Choose a column with immutable and unique values (e.g., an auto-incrementing integer or a UUID).
-  - Avoid using large columns (e.g., `VARCHAR(MAX)`) as primary keys, as they increase storage and query costs.
-  - Use surrogate keys (e.g., generated IDs) if no natural unique identifier exists.
+> [!TIP] 
+> - **Best Practices**:
+>   - Choose a column with immutable and unique values (e.g., an auto-incrementing integer or a UUID).
+>   - Avoid using large columns (e.g., `VARCHAR(MAX)`) as primary keys, as they increase storage and query costs.
+>   - Use surrogate keys (e.g., generated IDs) if no natural unique identifier exists.
 
 ### 2. Foreign Keys
 - **Definition**:
@@ -359,9 +400,9 @@ create table ORDERS (
     foreign key (CUSTOMER_ID) references CUSTOMERS(CUSTOMER_ID)
 );
 ```
-- **Best Practices**:
-  -  Always index foreign key columns for better performance.
-  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
+> **Best Practices**:
+>  -  Always index foreign key columns for better performance.
+>  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
 
 ### 3. Clustered and Non-clustered Indexes
 - **Definition**:
@@ -407,9 +448,9 @@ where
 ```
 ### 5. Indexing Best Practices:
 - Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
-- **Note**:
-  - Over-indexing can slow down insert/update operations, so use indexes judiciously.
-  - Regularly analyze query performance and remove unused indexes.
+> [!WARNING]
+> - Over-indexing can slow down insert/update operations, so use indexes judiciously.
+> - Regularly analyze query performance and remove unused indexes.
 ```sql
 -- Create an index on CUSTOMER_ID for faster lookups
 create index idx_customer_id on ORDERS (CUSTOMER_ID);
@@ -427,7 +468,8 @@ group by
 ```
 
 > [!TIP]
-> #### Follow consistent and descriptive naming conventions for keys and indexes:
+> #### Naming Conventions
+> - Follow consistent and descriptive naming conventions for keys and indexes:
 > - **Primary Keys**: `pk_<table_name>`
 > - **Foreign Keys**: `fk_<child_table>_<parent_table>`
 > - **Indexes**: `idx_<table_name>_<column_name>`
@@ -615,49 +657,21 @@ having
 - Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
 ```sql
 -- Good: Using COALESCE
-with customer_orders as (
-    select
-        CUSTOMER_ID,
-        count(*) as TOTAL_ORDERS
-    from
-        ORDERS
-    group by
-        CUSTOMER_ID
-)
 select
-    c.CUSTOMER_ID,
-    c.CUSTOMER_NAME,
-    coalesce(o.TOTAL_ORDERS, 0) as TOTAL_ORDERS
+    CUSTOMER_ID,
+    coalesce(TOTAL_ORDERS, 0) as TOTAL_ORDERS
 from
-    CUSTOMERS as c
-left join
-    customer_orders as o
-on
-    c.CUSTOMER_ID = o.CUSTOMER_ID;
+    CUSTOMER_ORDERS;
 
 -- Bad: Using a CASE Statement
-with customer_orders as (
-    select
-        CUSTOMER_ID,
-        count(*) as TOTAL_ORDERS
-    from
-        ORDERS
-    group by
-        CUSTOMER_ID
-)
 select
-    c.CUSTOMER_ID,
-    c.CUSTOMER_NAME,
+    CUSTOMER_ID,
     case
-        when o.TOTAL_ORDERS is null then 0
-        else o.TOTAL_ORDERS
+        when TOTAL_ORDERS is null then 0
+        else TOTAL_ORDERS
     end as TOTAL_ORDERS
 from
-    CUSTOMERS as c
-left join
-    customer_orders as o
-on
-    c.CUSTOMER_ID = o.CUSTOMER_ID;
+    CUSTOMER_ORDERS;
 ```
   
 ## Advanced Query Techniques
