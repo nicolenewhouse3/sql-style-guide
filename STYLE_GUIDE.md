@@ -1,8 +1,8 @@
 # SQL Style Guide
 This guide outlines best practices and conventions for writing clean, maintainable, and efficient SQL code. By adhering to these guidelines, teams can improve code readability, simplify collaboration, and ensure consistency across projects.
 
-## General Formatting
-### Line Breaks
+## 1. General Formatting
+### 1.1. Line Breaks
 - Place each clause (`select`, `from`, `where`, etc.) on a new line.
 ```sql
 -- Good
@@ -19,7 +19,7 @@ where
 SELECT ORDER_ID, CUSTOMER_ID, ORDER_DATE FROM ORDERS WHERE STATUS='Completed';
 ```
 
-### Indentation
+### 1.2. Indentation
 - Place each variable on its own line, indented under the keyword it belongs to.
 - Keep SQL keywords (`select`, `from`, `where`) aligned to the left.
 - Add a new line for each `AND` or `OR` in `WHERE` conditions, aligning them under the `WHERE` keyword.
@@ -42,7 +42,7 @@ FROM CUSTOMERS
 WHERE CITY='Chicago' AND STATE='IL' AND ZIP_CODE='60601';
 ```
 
-### Capitalization
+### 1.3. Capitalization
 - Use **lowercase** for SQL keywords (e.g., `select`, `from`, `where`).
 - Use **UPPERCASE** for table and column names to make them stand out.
 ```sql
@@ -65,7 +65,7 @@ WHERE
     CUSTOMER_NAME LIKE 'A%';
  ``` 
 
-### White Space Around Symbols
+### 1.4. White Space Around Symbols
 - Always include white space around operators like `=`, `*`, `-`, and `+` to improve readability.
 ```sql
 -- Good
@@ -93,7 +93,7 @@ where
     and DISCOUNT>0;
 ```
 
-## Comments 
+## 1.5. Comments 
 - Use -- for inline comments and place them on their own line.
 - Comments should be used **minimally**, aligning with best coding practices. 
   - If the code is clear, concise, and explains the logic straightforwardly, additional comments are unnecessary.
@@ -125,7 +125,7 @@ group by
 ```
 
 > [!TIP]
-> ### Guidelines for Effective Comments:
+> ## Guidelines for Effective Comments:
 > #### 1. Focus on the "why," not the "how":
 > - Use comments to explain the reasoning behind your approach, such as the logic or business rules being applied, rather than describing the code's functionality line by line.
 > - Avoid redundant comments; if the code is self-explanatory, additional comments about what the code does are unnecessary.
@@ -162,7 +162,7 @@ group by
 >     CUSTOMER_ID;
 > ```
 
-## Joins
+## 2. Joins
 - Use explicit join syntax (join + on) for clarity and to avoid Cartesian joins.
 - Always use aliases to make your queries easier to read.
 - Use the `as` keyword for explicit aliasing.
@@ -193,8 +193,8 @@ where
     and STOCK_LEVEL < 10;
 ```
 
-### Using Different Join Types
-#### 1. Inner Join (Most Common)
+### 2.1. Using Different Join Types
+#### 2.1.1. Inner Join (Most Common)
 - **Defintion**: Returns only the rows where there is a match in both tables.
 - **Use Case**: Used to retrieve data that exists in both tables.
 - **Example**: Only includes customers that are present in both tables.
@@ -212,7 +212,7 @@ where
 ```
 
 
-#### 2. Left Join (To Include Non-Matching Rows)
+#### 2.1.2. Left Join (To Include Non-Matching Rows)
 - **Defintion**: Returns all rows from the left table, and the matching rows from the right table. If there’s no match, `NULL` values are returned for the right table’s columns.
 - **Use Case**: Use when you want to keep all rows from the left table, even if there are no matches in the right table.
 - **Example**: Includes all customers, even if they have no orders.
@@ -229,7 +229,7 @@ where
     c.REGION = 'Northwest';
 ```
 
-#### 3. Full Outer Join (Rarely Used)
+#### 2.1.3. Full Outer Join (Rarely Used)
 - **Defintion**: Returns all rows from both tables. For rows without a match in the other table, `NULL` values are returned for the unmatched columns.
 - **Use Case**: Use when you need all rows from both tables, regardless of whether they match.
 - **Example**: Includes rows that match in either table, with `NULL` values for missing data.
@@ -245,7 +245,7 @@ full outer join
     on t1.ID = t2.ID;
 ```
 
-### Best Practices for Multi-Table Joins
+### 2.2. Best Practices for Multi-Table Joins
  - **Use Aliases Consistently**: Always use short, meaningful aliases to distinguish tables.
  - **Use Qualified Column Names**: In queries with multiple tables, qualify column names with table aliases to avoid ambiguity.
  - **Order Joins Logically**: Place the primary or largest table (`from`) first, followed by smaller tables, to make the logic easier to follow.
@@ -264,7 +264,7 @@ full outer join
      on o.PRODUCT_ID = p.PRODUCT_ID;
  ```
   
-## Common Table Expressions (CTEs):  
+## 3. Common Table Expressions (CTEs):  
 - **Defintion**:
     -  A **Common Table Expression (CTE)** is a temporary result set that you can reference within a `SELECT`, `INSERT`, `UPDATE`, or `DELETE` statement.
     -  It is defined at the start of a query using the `WITH` keyword and exists only for the duration of the query in which it is defined.
@@ -334,9 +334,9 @@ join (
     ) as ct
     on c.CUSTOMER_ID = ct.CUSTOMER_ID;
 ```
-### Tips for Writing Effective CTEs
+### 3.1. Tips for Writing Effective CTEs
 Here are some best practices and tips to write clean, maintainable, and efficient CTEs:
-#### 1. Keep CTEs Modular and Reusable
+#### 3.1.1. Keep CTEs Modular and Reusable
 - Each CTE should have a clear, singular purpose.
 - Limit CTEs to filtering, formatting, or basic calculations.
 ```sql
@@ -360,7 +360,7 @@ group by
     CUSTOMER_ID;
 ```
 
-#### 2. Avoid Embedding Joins in CTEs
+#### 3.1.2. Avoid Embedding Joins in CTEs
 - Keep joins in the main query for better readability and flexibility.
 - Joins are typically major processing steps and should not be buried within CTEs.
 ```sql
@@ -414,7 +414,7 @@ group by
     CUSTOMER_NAME;
 ```
 
-#### 2. Ensure CTEs Are Independently Executable
+#### 3.1.3. Ensure CTEs Are Independently Executable
 - Each CTE should be able to run on its own for easier debugging and validation.
 - Avoid interdependent CTEs where one CTE cannot be tested or debugged in isolation.
 ```sql
@@ -450,7 +450,7 @@ where
 > - **Dependency**: `customer_totals` depends on `filtered_orders`, so you cannot test it independently without executing `filtered_orders` first.
 > - **Debugging**: If something goes wrong, it’s harder to isolate issues in 1customer_totals1.
 
-#### 3. Name CTEs Meaningfully
+#### 3.1.4. Name CTEs Meaningfully
 - Use descriptive, concise names to indicate the purpose of the CTE.
 - Avoid generic names like `cte1` or `temp`.
 ```sql
@@ -471,7 +471,7 @@ cte2 as (
 )
 ```
 
-#### 4. Avoid Using CTEs for Simple Queries
+#### 3.1.5. Avoid Using CTEs for Simple Queries
 - If a single query can achieve the same result without compromising readability, skip the CTE.
 ```sql
 -- Unnecessary CTE
@@ -499,7 +499,7 @@ where
     STATUS = 'Completed';
 ```
 
-#### 5. Limit the number of CTEs in a single query
+#### 3.1.6. Limit the number of CTEs in a single query
 - Use temporary tables for complex multi-step transformations instead of chaining too many dependent CTEs.
 - Often combinations of temporary tables and CTE's are needed to help to break down scripts into manageable, testable parts.
 
@@ -514,10 +514,10 @@ where
 >     - **Temporary Tables**: Useful for large datasets or repeated use across multiple queries.
 >     - **Indexed Views**: Helpful for frequently accessed pre-aggregated or joined data.
 
-### Dynamic Query Design
+### 4. Dynamic Query Design
 - Avoid hardcoding variables like dates, table names, or filter conditions can reduce maintainability and flexibility.
 - Instead, use dynamic approaches that adapt to changing data or requirements. Here’s how you can avoid hardcoding and improve your query design:
-#### 1. Use Functions to Dynamically Generate Dates
+#### 4.1. Use Functions to Dynamically Generate Dates
 - Instead of hardcoding specific dates, use SQL functions like `GETDATE()`, `DATEADD()`, or `YEAR()` to dynamically calculate date ranges.
 ```sql
 -- Good: Dynamically calculate the current year
@@ -541,7 +541,7 @@ where
     year(ORDER_DATE) = 2024;
 ```
 
-#### 2. Use Functions to Dynamically Generate Dates
+#### 4.2. Use Functions to Dynamically Generate Dates
 - Instead of hardcoding conditions, query the table dynamically to get the required value.
 ```sql
 -- Good: Dynamically fetch the latest year from the table
@@ -565,7 +565,7 @@ where
     year(ORDER_DATE) = 2023;
 ```
 
-#### 3. Use Variables for Flexibility
+#### 4.3. Use Variables for Flexibility
 - Declare and use variables for frequently changing values like dates or thresholds.
 
 ```sql
@@ -582,7 +582,7 @@ where
     year(ORDER_DATE) = @currentYear;
 ```
 
-#### 4. Avoid Hardcoding Table Names: Use Dynamic SQL
+#### 4.4. Avoid Hardcoding Table Names: Use Dynamic SQL
 - When working with partitioned tables or tables with dynamic names (e.g., based on years), construct queries dynamically.
 ```sql
 -- Good: Construct the table name dynamically
@@ -610,7 +610,7 @@ where
     ORDER_TOTAL > 1000;
 ```
 
-#### 5.Leverage Parameterized Queries
+#### 4.5. Leverage Parameterized Queries
 - Use parameters for dynamic filtering conditions to make your queries reusable and adaptable.
 ```sql
 -- Good: Parameterized query
@@ -634,8 +634,8 @@ where
     STATE = 'IL';
 ```
 
-## Keys and Indexing
-### 1. Primary Keys
+## 6. Keys and Indexing
+### 6.1. Primary Keys
 - **Definition**:
   - A **primary key** is a column (or combination of columns) that uniquely identifies each row in a table. It:
     - Ensures uniqueness: No two rows can have the same value for the primary key column.
@@ -658,7 +658,7 @@ create table ORDERS (
 >   - Avoid using large columns (e.g., `VARCHAR(MAX)`) as primary keys, as they increase storage and query costs.
 >   - Use surrogate keys (e.g., generated IDs) if no natural unique identifier exists.
 
-### 2. Foreign Keys
+### 6.2. Foreign Keys
 - **Definition**:
   - A **foreign key** creates a relationship between two tables by linking a column in one table (child table) to the primary key in another table (parent table).
   - It enforces **referential integrity**, ensuring that data in the child table corresponds to data in the parent table.
@@ -683,7 +683,7 @@ create table ORDERS (
 >  -  Always index foreign key columns for better performance.
 >  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
 
-### 3. Clustered and Non-clustered Indexes
+### 6.3. Clustered and Non-clustered Indexes
 - **Definition**:
   - Indexes improve the speed of data retrieval operations.
   - Proper use of indexes balances performance and storage requirements.
@@ -705,7 +705,7 @@ create table ORDERS (
 create nonclustered index idx_order_date on ORDERS (ORDER_DATE);
 ```
 
-### 4. Covering Indexes
+### 6.4. Covering Indexes
 - **Definition**:
   - A **covering index** includes all columns referenced in a query, allowing the database to retrieve results directly from the index without accessing the base table.
 - **Use Case:**:
@@ -725,7 +725,7 @@ from
 where
     CUSTOMER_ID = 123;
 ```
-### 5. Indexing Best Practices:
+### 6.5. Indexing Best Practices:
 - Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
 > [!WARNING]
 > - Over-indexing can slow down insert/update operations, so use indexes judiciously.
@@ -761,8 +761,8 @@ group by
 >);
 >```
     
-## Performance Best Practices
-### 1. Avoid `select *`
+## 7. Performance Best Practices
+### 7.1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
 - Selecting all columns retrieves unnecessary data, increasing query time and resource usage.
   
@@ -778,7 +778,7 @@ from
 select * from CUSTOMERS;
 ```
 
-### 2. Use Appropriate Data Types:
+### 7.2. Use Appropriate Data Types:
 - Ensure columns use the most efficient data type to save storage and improve query performance. For example:
   - Use INT for numeric IDs (instead of `VARCHAR` or `TEXT`).
   - Use `DECIMAL` for precise financial data.
@@ -794,7 +794,7 @@ create table ORDERS (
 );
 ```
     
-### 4. Creating tables vs. `SELECT INTO`:
+### 7.3. Creating tables vs. `SELECT INTO`:
 - Manually defining a table’s schema before inserting data gives you full control over its structure, indexes, and constraints.
   -   Allows for schema validation, ensuring column types and constraints match your requirements.
   -   Enables adding indexes or constraints before inserting data for better query performance.
@@ -838,7 +838,7 @@ alter table TEMP_ORDERS
 add constraint pk_temp_orders primary key (ORDER_ID);
 ```
 
-### 4. Filter Early:
+### 7.4. Filter Early:
 - Use the where clause to filter rows as early as possible to reduce the amount of data processed in subsequent steps like `group by` or `having`.
 
 ```sql
@@ -865,7 +865,7 @@ having
     STATUS = 'Shipped';         -- Late filtering
 ```
 
-### 5. Modular Query Design
+### 7.5. Modular Query Design
 - Avoid overly complex queries; break complex queries into smaller, modular parts using Common Table Expressions (CTEs) or temporary tables.
 
 ```sql
@@ -918,7 +918,7 @@ having
     sum(ORDER_TOTAL) > 1000;
 ```
   
-### 6. Group Aggregates Clearly:
+### 7.6. Group Aggregates Clearly:
 - Use descriptive column names for aggregates.
 ```sql
 select
@@ -932,7 +932,7 @@ having
     EMPLOYEE_COUNT > 5;
 ```
 
-### 7. Use `COALESCE` for Handling NULL Values
+### 7.7. Use `COALESCE` for Handling NULL Values
 - Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
 ```sql
 -- Good: Using COALESCE
@@ -954,8 +954,8 @@ from
 ```
 
   
-## Advanced Query Techniques
-### 1. Pivoting Data
+## 8. Advanced Query Techniques
+### 8.1. Pivoting Data
 #### Use Case:
 - Convert rows into columns for easier reporting or analysis.
 #### Syntax  
@@ -989,7 +989,7 @@ pivot (
 ) as pivoted_data;
 ```
 
-### 2. Unpivoting Data
+### 8.2. Unpivoting Data
 #### Use Case:
 - Convert columns into rows, often to normalize a dataset.
 #### Syntax  
@@ -1056,7 +1056,7 @@ unpivot (
 >exec sp_executesql @sql;
 >```
 
-### 3. Ranking with `RANK()` and `PARTITION BY`
+### 8.3. Ranking with `RANK()` and `PARTITION BY`
 #### Use Case:
 - When you need to rank rows within groups (e.g., finding the top orders by customer).
 #### Syntax
@@ -1086,7 +1086,7 @@ from
   - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
 
     
-### 4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
+### 8.4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
 #### Use Case:
 - Fill `NULL` values in a column with the average value of that column, calculated within groups (e.g., by `REGION`).
 #### Syntax  
@@ -1105,7 +1105,7 @@ from
 - `avg(SALE_AMOUNT) over (partition by REGION)` calculates the average sales amount for each region.
 - `coalesce` replaces `NULL` values in `SALE_AMOUNT` with the computed average for that region.
 
-### 5. Rolling Averages with `PARTITION BY`
+### 8.5. Rolling Averages with `PARTITION BY`
 #### Use Case:
 - Calculate a rolling average of sales within groups (e.g., by `REGION`).
 #### Syntax  
@@ -1128,7 +1128,7 @@ from
 - The `rows between 2 preceding and current row` clause specifies a 3-row rolling window (current row + 2 previous rows).
 - `partition by REGION` ensures rolling averages are calculated separately for each region.
 
-### 6. Finding Percentiles with `NTILE`
+### 8.6. Finding Percentiles with `NTILE`
 #### Use Case:
 - Distribute rows into quartiles or other equal-sized groups.
 #### Syntax  
@@ -1147,7 +1147,7 @@ from
 ```
 - `ntile(4)` divides the dataset into four equal parts (quartiles) based on `SALE_AMOUNT`.
 
-### 7. Case-Specific Aggregations 
+### 8.7. Case-Specific Aggregations 
 #### Use Case:
 - Calculate different metrics for different conditions within the same query.
 #### Syntax  
@@ -1166,7 +1166,7 @@ group by
 ```
 - Conditional aggregation with `CASE` allows you to compute metrics for specific conditions.
 
-### 8. Case-Specific Aggregations 
+### 8.8. Case-Specific Aggregations 
 #### Use Case:
 - Compare a row’s value with the previous or next row within a group.
 - Helpful in calculating YoY percent change in long format.
@@ -1194,7 +1194,7 @@ from
 - `lead` retrieves the value from the next row.
 
 
-## Error Handling
+## 9. Error Handling
 Debugging and Error Handling
 Test queries incrementally; build them step by step.
 Use EXPLAIN or EXPLAIN ANALYZE to analyze query performance.
