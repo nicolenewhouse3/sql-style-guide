@@ -1091,6 +1091,12 @@ from
 - Fill `NULL` values in a column with the average value of that column, calculated within groups (e.g., by `REGION`).
 #### Syntax  
 ```sql
+select
+    COLUMN_1,
+    COLUMN_2,
+    coalesce(COLUMN_WITH_NULL, avg(COLUMN_WITH_NULL) over (partition by GROUPING_COLUMN)) as IMPUTED_VALUE
+from
+    TABLE_NAME;
 ```
 #### Example
 - Suppose you have a sales table with `NULL` values in the `SALE_AMOUNT` column. You want to replace these `NULL` values with the average sales for the same `REGION`.
@@ -1110,6 +1116,17 @@ from
 - Calculate a rolling average of sales within groups (e.g., by `REGION`).
 #### Syntax  
 ```sql
+select
+    COLUMN_1,
+    COLUMN_2,
+    COLUMN_WITH_VALUES,
+    avg(COLUMN_WITH_VALUES) over (
+        partition by GROUPING_COLUMN
+        order by SORTING_COLUMN
+        rows between N preceding and current row
+    ) as ROLLING_AVERAGE
+from
+    TABLE_NAME;
 ```
 #### Example
 ```sql
@@ -1133,6 +1150,14 @@ from
 - Distribute rows into quartiles or other equal-sized groups.
 #### Syntax  
 ```sql
+select
+    COLUMN_1,
+    COLUMN_2,
+    ntile(NUMBER_OF_BUCKETS) over (
+        order by SORTING_COLUMN
+    ) as PERCENTILE_BUCKET
+from
+    TABLE_NAME;
 ```
 #### Example
 ```sql
@@ -1152,6 +1177,14 @@ from
 - Calculate different metrics for different conditions within the same query.
 #### Syntax  
 ```sql
+select
+    GROUPING_COLUMN,
+    sum(case when CONDITION then COLUMN else 0 end) as METRIC_1,
+    sum(case when OTHER_CONDITION then COLUMN else 0 end) as METRIC_2
+from
+    TABLE_NAME
+group by
+    GROUPING_COLUMN;
 ```
 #### Example
 ```sql
@@ -1172,6 +1205,20 @@ group by
 - Helpful in calculating YoY percent change in long format.
 #### Syntax  
 ```sql
+select
+    GROUPING_COLUMN,
+    SORTING_COLUMN,
+    COLUMN_WITH_VALUES,
+    lag(COLUMN_WITH_VALUES) over (
+        partition by GROUPING_COLUMN
+        order by SORTING_COLUMN
+    ) as PREVIOUS_VALUE,
+    lead(COLUMN_WITH_VALUES) over (
+        partition by GROUPING_COLUMN
+        order by SORTING_COLUMN
+    ) as NEXT_VALUE
+from
+    TABLE_NAME;
 ```
 #### Example
 ```sql
@@ -1195,7 +1242,16 @@ from
 
 
 ## 9. Error Handling
-Debugging and Error Handling
-Test queries incrementally; build them step by step.
-Use EXPLAIN or EXPLAIN ANALYZE to analyze query performance.
-Simplify complex queries using CTEs or temporary tables.
+### 9.1. Debugging and Testing Queries
+#### 9.1.1. Test Incrementally:
+- Build queries step by step, testing each component individually before combining them.
+- Validate intermediate results using `SELECT` statements or temporary tables.
+#### 9.1.2. Use `TOP` or `LIMIT`:
+- For large datasets, test with a small subset to quickly validate the logic.
+```sql
+select
+    top 10 *
+from
+    ORDERS;
+```sql
+
