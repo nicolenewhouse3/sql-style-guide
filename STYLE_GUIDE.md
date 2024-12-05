@@ -57,12 +57,12 @@ where
 
 -- Bad
 SELECT
-    customer_id,
-    customer_name
+    CUSTOMER_ID,
+    CUSTOMER_NAME
 FROM
-    customers
+    CUSTOMERS
 WHERE
-    customer_name LIKE 'A%';
+    CUSTOMER_NAME LIKE 'A%';
  ``` 
 
 ### White Space Around Symbols
@@ -446,9 +446,9 @@ from
 where
     ct.TOTAL_ORDER_VALUE > 1000;
 ```
-> - **Why This is Problematic:**
->     - 1. **Dependency**: `customer_totals` depends on `filtered_orders`, so you cannot test it independently without executing `filtered_orders` first.
->       2. **Debugging**: If something goes wrong, it’s harder to isolate issues in 1customer_totals1.
+> **Why This is Problematic:**
+> - **Dependency**: `customer_totals` depends on `filtered_orders`, so you cannot test it independently without executing `filtered_orders` first.
+> - **Debugging**: If something goes wrong, it’s harder to isolate issues in 1customer_totals1.
 
 #### 3. Name CTEs Meaningfully
 - Use descriptive, concise names to indicate the purpose of the CTE.
@@ -503,16 +503,136 @@ where
 - Use temporary tables for complex multi-step transformations instead of chaining too many dependent CTEs.
 - Often combinations of temporary tables and CTE's are needed to help to break down scripts into manageable, testable parts.
 
-^[!WARNING]
-^ #### Use CTEs for Readability and Test Performance
-^ - CTEs can occasionally improve performance by helping the query optimizer break down complex logic, but **are primarily designed for improving query readability and modularity**
-^     - Whether they help or hinder performance depends on:
-^         - The size and complexity of the data.
-^         - How the SQL engine optimizes the query.
-^         - Whether the CTE is materialized (calculated once) or re-evaluated each time it's referenced.
-^ - It is essential to test the query execution plan. Compare the performance of using CTEs with alternatives like:
-^     - **Temporary Tables**: Useful for large datasets or repeated use across multiple queries.
-^     - **Indexed Views**: Helpful for frequently accessed pre-aggregated or joined data.
+> [!WARNING] 
+> **Use CTEs for Readability and Test Performance**
+> - CTEs can occasionally improve performance by helping the query optimizer break down complex logic, but **are primarily designed for improving query readability and modularity**
+>     - Whether they help or hinder performance depends on:
+>         - The size and complexity of the data.
+>         - How the SQL engine optimizes the query.
+>         - Whether the CTE is materialized (calculated once) or re-evaluated each time it's referenced.
+> - It is essential to test the query execution plan. Compare the performance of using CTEs with alternatives like:
+>     - **Temporary Tables**: Useful for large datasets or repeated use across multiple queries.
+>     - **Indexed Views**: Helpful for frequently accessed pre-aggregated or joined data.
+
+### Dynamic Query Design
+- Avoid hardcoding variables like dates, table names, or filter conditions can reduce maintainability and flexibility.
+- Instead, use dynamic approaches that adapt to changing data or requirements. Here’s how you can avoid hardcoding and improve your query design:
+#### 1. Use Functions to Dynamically Generate Dates
+- Instead of hardcoding specific dates, use SQL functions like `GETDATE()`, `DATEADD()`, or `YEAR()` to dynamically calculate date ranges.
+```sql
+-- Good: Dynamically calculate the current year
+select
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+from
+    ORDERS
+where
+    year(ORDER_DATE) = year(getdate());
+
+-- Bad: Hardcoded year
+select
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+from
+    ORDERS
+where
+    year(ORDER_DATE) = 2024;
+```
+
+#### 2. Use Functions to Dynamically Generate Dates
+- Instead of hardcoding conditions, query the table dynamically to get the required value.
+```sql
+-- Good: Dynamically fetch the latest year from the table
+select
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+from
+    ORDERS
+where
+    year(ORDER_DATE) = (select max(year(ORDER_DATE)) from ORDERS);
+
+-- Bad: Hardcoded year
+select
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+from
+    ORDERS
+where
+    year(ORDER_DATE) = 2023;
+```
+
+#### 3. Use Variables for Flexibility
+- Declare and use variables for frequently changing values like dates or thresholds.
+
+```sql
+-- Good: Use a variable for the year
+declare @currentYear int = year(getdate());
+
+select
+    CUSTOMER_ID,
+    ORDER_DATE,
+    ORDER_TOTAL
+from
+    ORDERS
+where
+    year(ORDER_DATE) = @currentYear;
+```
+
+#### 4. Avoid Hardcoding Table Names: Use Dynamic SQL
+- When working with partitioned tables or tables with dynamic names (e.g., based on years), construct queries dynamically.
+```sql
+-- Good: Construct the table name dynamically
+declare @currentYear nvarchar(4) = cast(year(getdate()) as nvarchar(4));
+declare @sql nvarchar(max);
+
+set @sql = '
+select
+    CUSTOMER_ID,
+    ORDER_TOTAL
+from
+    ORDERS_' + @currentYear + '
+where
+    ORDER_TOTAL > 1000';
+
+exec sp_executesql @sql;
+
+-- Bad: Hardcoded table name
+select
+    CUSTOMER_ID,
+    ORDER_TOTAL
+from
+    ORDERS_2024
+where
+    ORDER_TOTAL > 1000;
+```
+
+#### 5.Leverage Parameterized Queries
+- Use parameters for dynamic filtering conditions to make your queries reusable and adaptable.
+```sql
+-- Good: Parameterized query
+declare @state nvarchar(2) = 'IL';
+
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME
+from
+    CUSTOMERS
+where
+    STATE = @state;
+
+-- Bad: Hardcoded state
+select
+    CUSTOMER_ID,
+    CUSTOMER_NAME
+from
+    CUSTOMERS
+where
+    STATE = 'IL';
+```
 
 ## Keys and Indexing
 ### 1. Primary Keys
@@ -832,6 +952,7 @@ select
 from
     CUSTOMER_ORDERS;
 ```
+
   
 ## Advanced Query Techniques
 ### 1. Pivoting Data
