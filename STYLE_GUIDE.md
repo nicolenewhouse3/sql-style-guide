@@ -177,8 +177,7 @@ from
     PRODUCTS as p
 join
     STOCK as s
-on
-  p.PRODUCT_ID = s.PRODUCT_ID
+    on p.PRODUCT_ID = s.PRODUCT_ID
 where
     s.STOCK_LEVEL < 10;
 
@@ -207,8 +206,7 @@ from
     ORDERS as o
 join
     CUSTOMERS as c
-on
-    o.CUSTOMER_ID = c.CUSTOMER_ID
+    on o.CUSTOMER_ID = c.CUSTOMER_ID
 where
     o.ORDER_DATE >= '2024-01-01';
 ```
@@ -226,8 +224,7 @@ from
     CUSTOMERS as c
 left join
     ORDERS as o
-on
-    c.CUSTOMER_ID = o.CUSTOMER_ID
+    on c.CUSTOMER_ID = o.CUSTOMER_ID
 where
     c.REGION = 'Northwest';
 ```
@@ -245,8 +242,7 @@ from
     TABLE1 as t1
 full outer join
     TABLE2 as t2
-on
-    t1.ID = t2.ID;
+    on t1.ID = t2.ID;
 ```
 
 ### Best Practices for Multi-Table Joins
@@ -262,17 +258,41 @@ on
      ORDERS as o
  join
      CUSTOMERS as c
- on
-     o.CUSTOMER_ID = c.CUSTOMER_ID
+     on o.CUSTOMER_ID = c.CUSTOMER_ID
  join
      PRODUCTS as p
- on
-     o.PRODUCT_ID = p.PRODUCT_ID;
+     on o.PRODUCT_ID = p.PRODUCT_ID;
  ```
   
 ## Common Table Expressions (CTEs):  
-- Use with Common Table Expressions (CTEs) for reusable logic and improved readability.
-- Avoid overusing nested subqueries, as they can make the code harder to understand and maintain.
+- **Defintion**:
+    -  A **Common Table Expression (CTE)** is a temporary result set that you can reference within a `SELECT`, `INSERT`, `UPDATE`, or `DELETE` statement.
+    -  It is defined at the start of a query using the `WITH` keyword and exists only for the duration of the query in which it is defined.
+-  **How CTEs Work**:
+    -  CTEs improve **query readability** by breaking down complex logic into manageable parts.
+    -  They allow you to **reuse intermediate results** within the same query.
+    -  Unlike temporary tables, CTEs are **memory-resident** and are not materialized on disk, making them lightweight and easy to use.
+-  **Use Case**:
+    - To **simplify complex queries** by modularizing the logic.
+    - To **reuse intermediate results** within a single query.
+    - To replace **nested subqueries**, making the query easier to read and debug.
+- **Syntax**:
+ ```sql
+with CTE_Name as (
+    select
+        COLUMN1,
+        COLUMN2
+    from
+        TABLE_NAME
+    where
+        CONDITION
+)
+select
+    *
+from
+    CTE_Name;
+```
+- **Example**:
 ```sql
 -- Good
 with recent_order_totals as (
@@ -293,8 +313,7 @@ from
     CUSTOMERS as c
 join
     customer_totals as ct
-on
-  c.CUSTOMER_ID = ct.CUSTOMER_ID;
+    on c.CUSTOMER_ID = ct.CUSTOMER_ID;
 
 -- Bad
 select
@@ -312,97 +331,188 @@ join (
         o.ORDER_DATE >= '2024-01-01'
     group by
         o.CUSTOMER_ID
-) as ct
-on
-    c.CUSTOMER_ID = ct.CUSTOMER_ID;
+    ) as ct
+    on c.CUSTOMER_ID = ct.CUSTOMER_ID;
 ```
-> [!TIP]
-> #### Avoid Nested or Interdependent CTEs
-> - Each CTE should be independently executable without relying on other CTEs. This improves debugging, as each part of the query can be validated in isolation.
-> - If one CTE depends on another, consider using temporary tables to materialize intermediate results.
->```sql
->-- Good
->with recent_order_totals as (
->    select
->        CUSTOMER_ID,
->        count(ORDER_ID) as TOTAL_ORDERS
->    from
->        ORDERS
->    where
->        ORDER_DATE >= '2024-01-01'
->    group by
->        CUSTOMER_ID
->)
->select
->    c.CUSTOMER_NAME,
->    ct.TOTAL_ORDERS
->from
->    CUSTOMERS as c
->join
->    customer_totals as ct
->on
->  c.CUSTOMER_ID = ct.CUSTOMER_ID;
->
-> -- Bad
-> with recent_orders as (
->     select
->         ORDER_ID,
->         CUSTOMER_ID,
->         ORDER_DATE
->     from
->         ORDERS
->     where
->         ORDER_DATE >= '2024-01-01'
-> ),
-> customer_totals as (
->     select
->         CUSTOMER_ID,
->         count(ORDER_ID) as TOTAL_ORDERS
->     from
->         recent_orders
->     group by
->         CUSTOMER_ID
-> )
-> select
->     c.CUSTOMER_NAME,
->     ct.TOTAL_ORDERS
-> from
->     CUSTOMERS as c
-> join
->     customer_totals as ct
-> on
->     c.CUSTOMER_ID = ct.CUSTOMER_ID;
->```
+### Tips for Writing Effective CTEs
+Here are some best practices and tips to write clean, maintainable, and efficient CTEs:
+#### 1. Keep CTEs Modular and Reusable
+- Each CTE should have a clear, singular purpose.
+- Limit CTEs to filtering, formatting, or basic calculations.
+```sql
+-- Good: CTE handles filtering
+with filtered_orders as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID,
+        ORDER_TOTAL
+    from
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
+)
+select
+    CUSTOMER_ID,
+    sum(ORDER_TOTAL) as TOTAL_ORDER_VALUE
+from
+    filtered_orders
+group by
+    CUSTOMER_ID;
+```
 
+#### 2. Avoid Embedding Joins in CTEs
+- Keep joins in the main query for better readability and flexibility.
+- Joins are typically major processing steps and should not be buried within CTEs.
+```sql
+-- Good: Join in the main query
+with filtered_orders as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID,
+        ORDER_TOTAL
+    from
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
+),
+filtered_customers as (
+    select
+        CUSTOMER_ID,
+        CUSTOMER_NAME
+    from
+        CUSTOMERS
+)
+select
+    fc.CUSTOMER_NAME,
+    sum(fo.ORDER_TOTAL) as TOTAL_ORDER_VALUE
+from
+    filtered_customers as fc
+join
+    filtered_orders as fo
+    on fc.CUSTOMER_ID = fo.CUSTOMER_ID
+group by
+    fc.CUSTOMER_NAME;
 
-> [!WARNING]
-> #### When Not to Use CTEs:
-> - If the logic is simple and doesn't repeat, a straightforward query might suffice.
->```sql
->-- Unnecessary CTE
-> with simple_cte as (
->    select
->        ORDER_ID,
->        CUSTOMER_ID
->    from
->        ORDERS
->    where
->        STATUS = 'Completed'
->)
-> select
->    *
-> from
->    simple_cte;
->
->-- Better
-> select
->    ORDER_ID,
->    CUSTOMER_ID
-> from
->    ORDERS
-> where
->    STATUS = 'Completed';
-> ```
+-- Bad: Embedding the join in the CTE
+with customer_orders as (
+    select
+        c.CUSTOMER_ID,
+        c.CUSTOMER_NAME,
+        o.ORDER_TOTAL
+    from
+        CUSTOMERS as c
+    join
+        ORDERS as o
+        on c.CUSTOMER_ID = o.CUSTOMER_ID
+)
+select
+    CUSTOMER_NAME,
+    sum(ORDER_TOTAL) as TOTAL_ORDER_VALUE
+from
+    customer_orders
+group by
+    CUSTOMER_NAME;
+```
+
+#### 2. Ensure CTEs Are Independently Executable
+- Each CTE should be able to run on its own for easier debugging and validation.
+- Avoid interdependent CTEs where one CTE cannot be tested or debugged in isolation.
+```sql
+-- Bad
+with filtered_orders as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID,
+        ORDER_TOTAL
+    from
+        ORDERS
+    where
+        ORDER_DATE >= '2024-01-01'
+),
+customer_totals as (
+    select
+        CUSTOMER_ID,
+        sum(ORDER_TOTAL) as TOTAL_ORDER_VALUE
+    from
+        filtered_orders
+    group by
+        CUSTOMER_ID
+)
+select
+    ct.CUSTOMER_ID,
+    ct.TOTAL_ORDER_VALUE
+from
+    customer_totals as ct
+where
+    ct.TOTAL_ORDER_VALUE > 1000;
+```
+> - **Why This is Problematic:**
+>     - 1. **Dependency**: `customer_totals` depends on `filtered_orders`, so you cannot test it independently without executing `filtered_orders` first.
+>       2. **Debugging**: If something goes wrong, it’s harder to isolate issues in 1customer_totals1.
+
+#### 3. Name CTEs Meaningfully
+- Use descriptive, concise names to indicate the purpose of the CTE.
+- Avoid generic names like `cte1` or `temp`.
+```sql
+-- Good: Meaningful names
+with recent_orders as (
+    ...
+),
+customer_aggregates as (
+    ...
+)
+
+-- Bad
+with cte1 as (
+    ...
+),
+cte2 as (
+    ...
+)
+```
+
+#### 4. Avoid Using CTEs for Simple Queries
+- If a single query can achieve the same result without compromising readability, skip the CTE.
+```sql
+-- Unnecessary CTE
+with simple_query as (
+    select
+        ORDER_ID,
+        CUSTOMER_ID
+    from
+        ORDERS
+    where
+        STATUS = 'Completed'
+)
+select
+    *
+from
+    simple_query;
+
+-- Better
+select
+    ORDER_ID,
+    CUSTOMER_ID
+from
+    ORDERS
+where
+    STATUS = 'Completed';
+```
+
+#### 5. Limit the number of CTEs in a single query
+- Use temporary tables for complex multi-step transformations instead of chaining too many dependent CTEs.
+- Often combinations of temporary tables and CTE's are needed to help to break down scripts into manageable, testable parts.
+
+^[!WARNING]
+^ #### Use CTEs for Readability and Test Performance
+^ - CTEs can occasionally improve performance by helping the query optimizer break down complex logic, but **are primarily designed for improving query readability and modularity**
+^     - Whether they help or hinder performance depends on:
+^         - The size and complexity of the data.
+^         - How the SQL engine optimizes the query.
+^         - Whether the CTE is materialized (calculated once) or re-evaluated each time it's referenced.
+^ - It is essential to test the query execution plan. Compare the performance of using CTEs with alternatives like:
+^     - **Temporary Tables**: Useful for large datasets or repeated use across multiple queries.
+^     - **Indexed Views**: Helpful for frequently accessed pre-aggregated or joined data.
 
 ## Keys and Indexing
 ### 1. Primary Keys
