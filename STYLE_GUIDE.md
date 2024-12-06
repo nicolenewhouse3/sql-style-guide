@@ -167,6 +167,7 @@ group by
 - Always use aliases to make your queries easier to read.
 - Use the `as` keyword for explicit aliasing.
 - Qualify column names with table aliases to avoid ambiguity in multi-table joins.
+- Explicitly list the type of join (eg. `inner join` vs `join`) so that the join type is crystal clear:
 ```sql
 -- Good
 select
@@ -175,7 +176,7 @@ select
     s.STOCK_LEVEL
 from
     PRODUCTS as p
-join
+inner join
     STOCK as s
     on p.PRODUCT_ID = s.PRODUCT_ID
 where
@@ -204,7 +205,7 @@ select
     c.CUSTOMER_NAME
 from
     ORDERS as o
-join
+inner join
     CUSTOMERS as c
     on o.CUSTOMER_ID = c.CUSTOMER_ID
 where
@@ -256,10 +257,10 @@ full outer join
      p.PRODUCT_NAME
  from
      ORDERS as o
- join
+ inner join
      CUSTOMERS as c
      on o.CUSTOMER_ID = c.CUSTOMER_ID
- join
+ inner join
      PRODUCTS as p
      on o.PRODUCT_ID = p.PRODUCT_ID;
  ```
@@ -311,7 +312,7 @@ select
     ct.TOTAL_ORDERS
 from
     CUSTOMERS as c
-join
+inner join
     customer_totals as ct
     on c.CUSTOMER_ID = ct.CUSTOMER_ID;
 
@@ -321,7 +322,7 @@ select
     ct.TOTAL_ORDERS
 from
     CUSTOMERS as c
-join (
+inner join (
     select
         o.CUSTOMER_ID,
         count(o.ORDER_ID) as TOTAL_ORDERS
@@ -387,7 +388,7 @@ select
     sum(fo.ORDER_TOTAL) as TOTAL_ORDER_VALUE
 from
     filtered_customers as fc
-join
+inner join
     filtered_orders as fo
     on fc.CUSTOMER_ID = fo.CUSTOMER_ID
 group by
@@ -401,7 +402,7 @@ with customer_orders as (
         o.ORDER_TOTAL
     from
         CUSTOMERS as c
-    join
+    inner join
         ORDERS as o
         on c.CUSTOMER_ID = o.CUSTOMER_ID
 )
@@ -958,7 +959,7 @@ from
 ### 7.1. Pivoting Data
 #### Use Case:
 - Convert rows into columns for easier reporting or analysis.
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     pivoted_columns
@@ -969,7 +970,7 @@ pivot (
     for column_to_pivot in (value1, value2, ...)
 ) as pivoted_table;
 ```
-#### Example
+#### Example:
 - Convert sales data into a pivoted format, showing total sales for each region by year.
 ``` sql
 select
@@ -992,7 +993,7 @@ pivot (
 ### 7.2. Unpivoting Data
 #### Use Case:
 - Convert columns into rows, often to normalize a dataset.
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     column1,
@@ -1005,7 +1006,7 @@ unpivot (
     value_column for unpivoted_column in (column_to_unpivot1, column_to_unpivot2, ...)
 ) as unpivoted_table;
 ```
-#### Example
+#### Example:
 - Unpivot sales data to analyze it row-wise by year.
 ```sql
 select
@@ -1059,7 +1060,7 @@ unpivot (
 ### 7.3. Ranking with `RANK()` and `PARTITION BY`
 #### Use Case:
 - When you need to rank rows within groups (e.g., finding the top orders by customer).
-#### Syntax
+#### Syntax:
 ```sql
 select
     column1,
@@ -1068,7 +1069,7 @@ select
 from
     table_name;
 ```
-#### Example
+#### Example:
 - Find the top-ranked orders for each customer based on ORDER_TOTAL.
 ```sql
 select
@@ -1089,7 +1090,7 @@ from
 ### 7.4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
 #### Use Case:
 - Fill `NULL` values in a column with the average value of that column, calculated within groups (e.g., by `REGION`).
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     COLUMN_1,
@@ -1098,7 +1099,7 @@ select
 from
     TABLE_NAME;
 ```
-#### Example
+#### Example:
 - Suppose you have a sales table with `NULL` values in the `SALE_AMOUNT` column. You want to replace these `NULL` values with the average sales for the same `REGION`.
 ```sql
 select
@@ -1114,7 +1115,7 @@ from
 ### 7.5. Rolling Averages with `PARTITION BY`
 #### Use Case:
 - Calculate a rolling average of sales within groups (e.g., by `REGION`).
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     COLUMN_1,
@@ -1128,7 +1129,7 @@ select
 from
     TABLE_NAME;
 ```
-#### Example
+#### Example:
 ```sql
 select
     REGION,
@@ -1148,7 +1149,7 @@ from
 ### 7.6. Finding Percentiles with `NTILE`
 #### Use Case:
 - Distribute rows into quartiles or other equal-sized groups.
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     COLUMN_1,
@@ -1159,7 +1160,7 @@ select
 from
     TABLE_NAME;
 ```
-#### Example
+#### Example:
 ```sql
 select
     SALE_ID,
@@ -1175,7 +1176,7 @@ from
 ### 7.7. Case-Specific Aggregations 
 #### Use Case:
 - Calculate different metrics for different conditions within the same query.
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     GROUPING_COLUMN,
@@ -1186,7 +1187,7 @@ from
 group by
     GROUPING_COLUMN;
 ```
-#### Example
+#### Example:
 ```sql
 select
     REGION,
@@ -1203,7 +1204,7 @@ group by
 #### Use Case:
 - Compare a row’s value with the previous or next row within a group.
 - Helpful in calculating YoY percent change in long format.
-#### Syntax  
+#### Syntax:  
 ```sql
 select
     GROUPING_COLUMN,
@@ -1220,7 +1221,7 @@ select
 from
     TABLE_NAME;
 ```
-#### Example
+#### Example:
 ```sql
 select
     REGION,
