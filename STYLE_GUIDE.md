@@ -634,8 +634,8 @@ where
     STATE = 'IL';
 ```
 
-## 6. Keys and Indexing
-### 6.1. Primary Keys
+## 5. Keys and Indexing
+### 5.1. Primary Keys
 - **Definition**:
   - A **primary key** is a column (or combination of columns) that uniquely identifies each row in a table. It:
     - Ensures uniqueness: No two rows can have the same value for the primary key column.
@@ -658,7 +658,7 @@ create table ORDERS (
 >   - Avoid using large columns (e.g., `VARCHAR(MAX)`) as primary keys, as they increase storage and query costs.
 >   - Use surrogate keys (e.g., generated IDs) if no natural unique identifier exists.
 
-### 6.2. Foreign Keys
+### 5.2. Foreign Keys
 - **Definition**:
   - A **foreign key** creates a relationship between two tables by linking a column in one table (child table) to the primary key in another table (parent table).
   - It enforces **referential integrity**, ensuring that data in the child table corresponds to data in the parent table.
@@ -683,7 +683,7 @@ create table ORDERS (
 >  -  Always index foreign key columns for better performance.
 >  -  Use cascading actions (`ON DELETE CASCADE`, `ON UPDATE CASCADE`) judiciously.
 
-### 6.3. Clustered and Non-clustered Indexes
+### 5.3. Clustered and Non-clustered Indexes
 - **Definition**:
   - Indexes improve the speed of data retrieval operations.
   - Proper use of indexes balances performance and storage requirements.
@@ -705,7 +705,7 @@ create table ORDERS (
 create nonclustered index idx_order_date on ORDERS (ORDER_DATE);
 ```
 
-### 6.4. Covering Indexes
+### 5.4. Covering Indexes
 - **Definition**:
   - A **covering index** includes all columns referenced in a query, allowing the database to retrieve results directly from the index without accessing the base table.
 - **Use Case:**:
@@ -725,7 +725,7 @@ from
 where
     CUSTOMER_ID = 123;
 ```
-### 6.5. Indexing Best Practices:
+### 5.5. Indexing Best Practices:
 - Index columns frequently used in `where`, `join`, or `group` by clauses to improve query performance.
 > [!WARNING]
 > - Over-indexing can slow down insert/update operations, so use indexes judiciously.
@@ -761,8 +761,8 @@ group by
 >);
 >```
     
-## 7. Performance Best Practices
-### 7.1. Avoid `select *`
+## 6. Performance Best Practices
+### 6.1. Avoid `select *`
 - Always specify the columns you need for better performance and readability.
 - Selecting all columns retrieves unnecessary data, increasing query time and resource usage.
   
@@ -778,7 +778,7 @@ from
 select * from CUSTOMERS;
 ```
 
-### 7.2. Use Appropriate Data Types:
+### 6.2. Use Appropriate Data Types:
 - Ensure columns use the most efficient data type to save storage and improve query performance. For example:
   - Use INT for numeric IDs (instead of `VARCHAR` or `TEXT`).
   - Use `DECIMAL` for precise financial data.
@@ -794,7 +794,7 @@ create table ORDERS (
 );
 ```
     
-### 7.3. Creating tables vs. `SELECT INTO`:
+### 6.3. Creating tables vs. `SELECT INTO`:
 - Manually defining a table’s schema before inserting data gives you full control over its structure, indexes, and constraints.
   -   Allows for schema validation, ensuring column types and constraints match your requirements.
   -   Enables adding indexes or constraints before inserting data for better query performance.
@@ -838,7 +838,7 @@ alter table TEMP_ORDERS
 add constraint pk_temp_orders primary key (ORDER_ID);
 ```
 
-### 7.4. Filter Early:
+### 6.4. Filter Early:
 - Use the where clause to filter rows as early as possible to reduce the amount of data processed in subsequent steps like `group by` or `having`.
 
 ```sql
@@ -865,7 +865,7 @@ having
     STATUS = 'Shipped';         -- Late filtering
 ```
 
-### 7.5. Modular Query Design
+### 6.5. Modular Query Design
 - Avoid overly complex queries; break complex queries into smaller, modular parts using Common Table Expressions (CTEs) or temporary tables.
 
 ```sql
@@ -918,7 +918,7 @@ having
     sum(ORDER_TOTAL) > 1000;
 ```
   
-### 7.6. Group Aggregates Clearly:
+### 6.6. Group Aggregates Clearly:
 - Use descriptive column names for aggregates.
 ```sql
 select
@@ -932,7 +932,7 @@ having
     EMPLOYEE_COUNT > 5;
 ```
 
-### 7.7. Use `COALESCE` for Handling NULL Values
+### 6.7. Use `COALESCE` for Handling NULL Values
 - Impute missing values with `COALESCE` rather than a `CASE` statement for better readability and performance.
 ```sql
 -- Good: Using COALESCE
@@ -954,8 +954,8 @@ from
 ```
 
   
-## 8. Advanced Query Techniques
-### 8.1. Pivoting Data
+## 7. Advanced Query Techniques
+### 7.1. Pivoting Data
 #### Use Case:
 - Convert rows into columns for easier reporting or analysis.
 #### Syntax  
@@ -989,7 +989,7 @@ pivot (
 ) as pivoted_data;
 ```
 
-### 8.2. Unpivoting Data
+### 7.2. Unpivoting Data
 #### Use Case:
 - Convert columns into rows, often to normalize a dataset.
 #### Syntax  
@@ -1056,7 +1056,7 @@ unpivot (
 >exec sp_executesql @sql;
 >```
 
-### 8.3. Ranking with `RANK()` and `PARTITION BY`
+### 7.3. Ranking with `RANK()` and `PARTITION BY`
 #### Use Case:
 - When you need to rank rows within groups (e.g., finding the top orders by customer).
 #### Syntax
@@ -1086,7 +1086,7 @@ from
   - The `ORDER BY` clause ranks the rows within each group based on `ORDER_TOTAL` in descending order.
 
     
-### 8.4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
+### 7.4. Imputing Missing Values with an Average (Using `COALESCE` and `PARTITION BY`)
 #### Use Case:
 - Fill `NULL` values in a column with the average value of that column, calculated within groups (e.g., by `REGION`).
 #### Syntax  
@@ -1111,7 +1111,7 @@ from
 - `avg(SALE_AMOUNT) over (partition by REGION)` calculates the average sales amount for each region.
 - `coalesce` replaces `NULL` values in `SALE_AMOUNT` with the computed average for that region.
 
-### 8.5. Rolling Averages with `PARTITION BY`
+### 7.5. Rolling Averages with `PARTITION BY`
 #### Use Case:
 - Calculate a rolling average of sales within groups (e.g., by `REGION`).
 #### Syntax  
@@ -1145,7 +1145,7 @@ from
 - The `rows between 2 preceding and current row` clause specifies a 3-row rolling window (current row + 2 previous rows).
 - `partition by REGION` ensures rolling averages are calculated separately for each region.
 
-### 8.6. Finding Percentiles with `NTILE`
+### 7.6. Finding Percentiles with `NTILE`
 #### Use Case:
 - Distribute rows into quartiles or other equal-sized groups.
 #### Syntax  
@@ -1172,7 +1172,7 @@ from
 ```
 - `ntile(4)` divides the dataset into four equal parts (quartiles) based on `SALE_AMOUNT`.
 
-### 8.7. Case-Specific Aggregations 
+### 7.7. Case-Specific Aggregations 
 #### Use Case:
 - Calculate different metrics for different conditions within the same query.
 #### Syntax  
@@ -1199,7 +1199,7 @@ group by
 ```
 - Conditional aggregation with `CASE` allows you to compute metrics for specific conditions.
 
-### 8.8. Case-Specific Aggregations 
+### 7.8. Case-Specific Aggregations 
 #### Use Case:
 - Compare a row’s value with the previous or next row within a group.
 - Helpful in calculating YoY percent change in long format.
@@ -1241,12 +1241,12 @@ from
 - `lead` retrieves the value from the next row.
 
 
-## 9. Error Handling
-### 9.1. Debugging and Testing Queries
-#### 9.1.1. Test Incrementally:
+## 8. Error Handling
+### 8.1. Debugging and Testing Queries
+#### 8.1.1. Test Incrementally:
 - Build queries step by step, testing each component individually before combining them.
 - Validate intermediate results using `SELECT` statements or temporary tables.
-#### 9.1.2. Use `TOP` or `LIMIT`:
+#### 8.1.2. Use `TOP` or `LIMIT`:
 - For large datasets, test with a small subset to quickly validate the logic.
 ```sql
 select
@@ -1254,9 +1254,9 @@ select
 from
     ORDERS;
 ```
-#### 9.1.3. Cross-Check Results:
+#### 8.1.3. Cross-Check Results:
 - Validate query results against expected outputs or smaller subsets of data.
-#### 9.1.4. Use Aggregates for Sanity Checks:
+#### 8.1.4. Use Aggregates for Sanity Checks:
 - Verify totals, counts, or averages to ensure the query is processing data as expected.
 ```sql
 select
@@ -1266,8 +1266,8 @@ from
     ORDERS;
 ```
 
-### 9.2. Prevent Common Errors
-#### 9.2.1. Handle NULL Values:
+### 8.2. Prevent Common Errors
+#### 8.2.1. Handle NULL Values:
 - Use `COALESCE` or `ISNULL` to manage `NULL` values and avoid unexpected results in calculations.
 ```sql 
 select
@@ -1276,7 +1276,7 @@ select
 from
     ORDERS;
 ```
-#### 9.2.2. Check for Duplicate Data:
+#### 8.2.2. Check for Duplicate Data:
 - Use `DISTINCT` or `GROUP BY` to ensure unique results when required.
 ```sql
 select distinct
@@ -1284,11 +1284,11 @@ select distinct
 from
     ORDERS;
 ```
-#### 9.2.3. Validate Filters:
+#### 8.2.3. Validate Filters:
 - Double-check `WHERE` clauses for logical errors, such as unintentional exclusions or inclusions.
 
-### 9.3. Query Optimization for Error Handling
-#### 9.3.1. Use EXPLAIN or EXPLAIN ANALYZE:
+### 8.3. Query Optimization for Error Handling
+#### 8.3.1. Use EXPLAIN or EXPLAIN ANALYZE:
 -Analyze the query execution plan to identify bottlenecks or inefficient operations.
 ```sql
 explain
@@ -1299,7 +1299,7 @@ from
 where
     ORDER_DATE >= '2024-01-01';
 ```
-#### 9.4.1. Log Errors:
+#### 8.4.1. Log Errors:
 - Use database error-handling mechanisms (like `TRY`...`CATCH` in SQL Server) to log and capture runtime errors.
 ```sql
 begin try
