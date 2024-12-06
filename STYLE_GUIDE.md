@@ -764,7 +764,7 @@ group by
     
 ## 6. Performance Best Practices
 ### 6.1. Avoid `select *`
-- Always specify the columns you need for better performance and readability.
+- Always specify and only pull the columns you need for better performance and readability.
 - Selecting all columns retrieves unnecessary data, increasing query time and resource usage.
   
 ```sql
@@ -954,6 +954,99 @@ from
     CUSTOMER_ORDERS;
 ```
 
+### 6.8. Avoid `UPDATE` Statements
+- Avoid using `UPDATE` statements when possible, as they double I/O time by requiring both read and write operations
+- Use `INSERT INTO` with a new table to handle changes efficiently, minimizing I/O overhead and preserving original data for rollback or auditing purposes.
+```sql
+-- Good: Using INSERT INTO to create a new table with updated data
+select
+    ORDER_ID,
+    CUSTOMER_ID,
+    ORDER_TOTAL,
+    case
+        when STATUS = 'Pending' then 'Completed'
+        else STATUS
+    end as STATUS
+into
+    UPDATED_ORDERS
+from
+    ORDERS;
+
+-- Bad: Using UPDATE
+update
+    ORDERS
+set
+    STATUS = 'Completed'
+where
+    STATUS = 'Pending';
+```
+
+### 6.9. Run Large Queries in Batches
+- For large tables, running queries in batches can reduce memory usage, avoid locking contention, and improve overall query performance.
+- Batch processing divides the workload into manageable chunks, ensuring the database system handles the operation more efficiently.
+```sql
+declare @batchSize int = 10000;
+declare @minId int = (select min(ORDER_ID) from ORDERS);
+declare @maxId int = (select max(ORDER_ID) from ORDERS);
+
+while @minId <= @maxId
+begin
+    -- Process a batch of rows
+    select
+        ORDER_ID,
+        CUSTOMER_ID,
+        ORDER_TOTAL
+    from
+        ORDERS
+    where
+        ORDER_ID >= @minId
+        and ORDER_ID < @minId + @batchSize;
+
+    -- Increment the batch range
+    set @minId = @minId + @batchSize;
+end;
+```
+
+### 6.10. Pre-Stage Data for Better Performance
+- Perform large joins and complex filtering operations upfront to create intermediate or temporary tables.
+- This approach minimizes the computational overhead during advanced operations like aggregations or nested calculations.
+```sql
+-- Good: Pre-stage Data with a Temporary Table
+-- Step 1: Perform the large join upfront
+select
+    o.ORDER_ID,
+    o.CUSTOMER_ID,
+    c.CUSTOMER_NAME,
+    o.ORDER_TOTAL
+into
+    #PRESTAGED_ORDERS
+from
+    ORDERS as o
+inner join
+    CUSTOMERS as c
+    on o.CUSTOMER_ID = c.CUSTOMER_ID;
+
+-- Step 2: Use the pre-staged data for advanced operations
+select
+    CUSTOMER_NAME,
+    sum(ORDER_TOTAL) as TOTAL_SALES
+from
+    #PRESTAGED_ORDERS
+group by
+    CUSTOMER_NAME;
+
+-- Bad: Performing the Join Within Advanced Operations
+select
+    c.CUSTOMER_NAME,
+    sum(o.ORDER_TOTAL) as TOTAL_SALES
+from
+    ORDERS as o
+inner join
+    CUSTOMERS as c
+    on o.CUSTOMER_ID = c.CUSTOMER_ID
+group by
+    c.CUSTOMER_NAME;
+```
   
 ## 7. Advanced Query Techniques
 ### 7.1. Pivoting Data
