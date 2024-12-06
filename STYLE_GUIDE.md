@@ -17,7 +17,7 @@ where
 
 -- Bad
 SELECT ORDER_ID, CUSTOMER_ID, ORDER_DATE FROM ORDERS WHERE STATUS='Completed';
-```
+```  
 
 ### 1.2. Indentation
 - Place each variable on its own line, indented under the keyword it belongs to.
