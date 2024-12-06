@@ -18,7 +18,7 @@ This SQL Style Guide provides coding standards and best practices to ensure cons
 - [5. Keys and Indexing](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#5-keys-and-indexing)
 - [6. Performance Best Practices](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#6-performance-best-practices)
 - [7. Advanced Query Techniques](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#7-advanced-query-techniques)
-- [8. Advanced Query Techniques](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#8-error-handling)
+- [8. Error Handling](https://github.com/nicolenewhouse3/sql-style-guide/blob/main/STYLE_GUIDE.md#8-error-handling)
 
 ### How to Use
 - Refer to this guide when writing new SQL queries or reviewing code.
