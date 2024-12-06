@@ -1253,5 +1253,78 @@ select
     top 10 *
 from
     ORDERS;
+```
+#### 9.1.3. Cross-Check Results:
+- Validate query results against expected outputs or smaller subsets of data.
+#### 9.1.4. Use Aggregates for Sanity Checks:
+- Verify totals, counts, or averages to ensure the query is processing data as expected.
 ```sql
+select
+    count(*) as TOTAL_ORDERS,
+    sum(ORDER_TOTAL) as TOTAL_SALES
+from
+    ORDERS;
+```
 
+### 9.2. Prevent Common Errors
+#### 9.2.1. Handle NULL Values:
+- Use `COALESCE` or `ISNULL` to manage `NULL` values and avoid unexpected results in calculations.
+```sql 
+select
+    CUSTOMER_ID,
+    isnull(ORDER_TOTAL, 0) as ORDER_TOTAL
+from
+    ORDERS;
+```
+#### 9.2.2. Check for Duplicate Data:
+- Use `DISTINCT` or `GROUP BY` to ensure unique results when required.
+```sql
+select distinct
+    CUSTOMER_ID
+from
+    ORDERS;
+```
+#### 9.2.3. Validate Filters:
+- Double-check `WHERE` clauses for logical errors, such as unintentional exclusions or inclusions.
+
+### 9.3. Query Optimization for Error Handling
+#### 9.3.1. Use EXPLAIN or EXPLAIN ANALYZE:
+-Analyze the query execution plan to identify bottlenecks or inefficient operations.
+```sql
+explain
+select
+    *
+from
+    ORDERS
+where
+    ORDER_DATE >= '2024-01-01';
+```
+#### 9.4.1. Log Errors:
+- Use database error-handling mechanisms (like `TRY`...`CATCH` in SQL Server) to log and capture runtime errors.
+```sql
+begin try
+    with valid_orders as (
+        select
+            ORDER_ID,
+            CUSTOMER_ID,
+            isnull(ORDER_TOTAL, 0) as ORDER_TOTAL
+        from
+            ORDERS
+        where
+            ORDER_DATE >= '2024-01-01'
+    )
+    select
+        CUSTOMER_ID,
+        sum(ORDER_TOTAL) as TOTAL_SALES
+    from
+        valid_orders
+    group by
+        CUSTOMER_ID;
+end try
+begin catch
+    select
+        ERROR_MESSAGE() as ERROR_LOG,
+        ERROR_NUMBER() as ERROR_CODE,
+        ERROR_LINE() as LINE_NUMBER;
+end catch;
+```
